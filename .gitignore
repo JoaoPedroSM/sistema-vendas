@@ -1,0 +1,4 @@
+firebase.exe
+.firebase/
+node_modules/
+*.log

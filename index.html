@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão e Monitoramento de Vendas</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS Estilos -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Bibliotecas Locais (Alta Disponibilidade & Offline) -->
+    <!-- CryptoJS para Criptografia local -->
+    <script src="js/crypto-js.min.js" defer></script>
+    <!-- Chart.js para os Gráficos -->
+    <script src="js/chart.min.js" defer></script>
+    <!-- Lucide Icons para os ícones modernos -->
+    <script src="js/lucide.min.js" defer></script>
+
+    <!-- Depurador de Erros Visuais no Navegador -->
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error('Erro detectado:', e);
+            var errDiv = document.getElementById('debug-err-banner');
+            if (!errDiv) {
+                errDiv = document.createElement('div');
+                errDiv.id = 'debug-err-banner';
+                errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#ef4444;color:#fff;padding:12px 20px;z-index:999999;font-family:monospace;font-size:12px;box-shadow:0 2px 10px rgba(0,0,0,0.5);display:flex;justify-content:space-between;align-items:center;';
+                document.body.appendChild(errDiv);
+            }
+            errDiv.innerHTML = '<div><strong>Erro de Script:</strong> ' + e.message + ' em ' + e.filename.split('/').pop() + ':' + e.lineno + '</div><button onclick="this.parentElement.remove()" style="background:none;border:1px solid #fff;color:#fff;padding:2px 8px;cursor:pointer;border-radius:4px;margin-left:10px;">Fechar</button>';
+        });
+    </script>
+
+    <!-- JS Módulos da SPA (defer + type="module") -->
+    <script type="module" src="js/app.js" defer></script>
+</head>
+<body class="dark-theme"> <!-- Tema escuro elegante por padrão -->
+
+    <!-- Container de Toast para Notificações -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- TELA DE LOGIN (Visível se não autenticado) -->
+    <div id="login-container" class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i data-lucide="trending-up" class="logo-icon"></i>
+                </div>
+                <h2>Acesso ao Sistema</h2>
+                <p>Gestão e Monitoramento de Vendas</p>
+            </div>
+            
+            <!-- Formulário de Login -->
+            <form id="login-form" class="auth-form">
+                <div class="input-group">
+                    <label for="login-username">Usuário</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="login-username" placeholder="Digite seu usuário" required autocomplete="username">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Senha</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" id="login-password" placeholder="Digite sua senha" required autocomplete="current-password" style="padding-right: 42px;">
+                        <button type="button" class="btn-toggle-password" data-target="login-password" style="position:absolute;right:14px;background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;padding:0;">
+                            <i data-lucide="eye" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="remember-me-container" style="display:flex; align-items:center; gap:8px; margin-bottom:20px; margin-top:-4px; user-select:none;">
+                    <input type="checkbox" id="login-remember" style="width:16px; height:16px; cursor:pointer; accent-color:var(--primary);">
+                    <label for="login-remember" style="font-size:0.85rem; color:var(--text-secondary); cursor:pointer;">Mantenha-me conectado</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span>Entrar</span>
+                    <i data-lucide="log-in"></i>
+                </button>
+                <p class="auth-toggle-text">Não tem uma conta? <a href="#" id="go-to-register">Cadastre-se</a></p>
+            </form>
+
+            <!-- Formulário de Registro (Oculto inicialmente) -->
+            <form id="register-form" class="auth-form hidden">
+                <div class="input-group">
+                    <label for="reg-username">Novo Usuário</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="reg-username" placeholder="Crie um nome de usuário" required autocomplete="username">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="reg-password">Senha de Acesso</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres (A-Z, a-z, 0-9, @$!...)" required autocomplete="new-password" style="padding-right: 42px;">
+                        <button type="button" class="btn-toggle-password" data-target="reg-password" style="position:absolute;right:14px;background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;padding:0;">
+                            <i data-lucide="eye" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+                    <small style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 5px; line-height: 1.3;">
+                        A senha deve ter pelo menos 8 caracteres, contendo 1 letra maiúscula, 1 minúscula, 1 número e 1 caractere especial (ex: @$!%*?&).
+                    </small>
+                </div>
+                <div class="input-group">
+                    <label for="reg-confirm-password">Confirmar Senha</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" id="reg-confirm-password" placeholder="Repita a senha" required autocomplete="new-password" style="padding-right: 42px;">
+                        <button type="button" class="btn-toggle-password" data-target="reg-confirm-password" style="position:absolute;right:14px;background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;padding:0;">
+                            <i data-lucide="eye" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">
+                    <span>Criar Conta & Inicializar Banco</span>
+                    <i data-lucide="user-plus"></i>
+                </button>
+                <p class="auth-toggle-text">Já possui conta? <a href="#" id="go-to-login">Fazer Login</a></p>
+            </form>
+            
+            <!-- Botão de Recuperação/Reset Total do Cache -->
+            <div style="margin-top: 24px; text-align: center; border-top: 1px dashed var(--border-color); padding-top: 16px;">
+                <a href="#" id="btn-reset-system" style="color: var(--danger); font-size: 0.8rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; justify-content: center; width: 100%;">
+                    <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+                    <span>Zerar e Resetar Sistema (Limpar Cache)</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- APLICAÇÃO PRINCIPAL (Visível após autenticação) -->
+    <div id="app-container" class="app-wrapper hidden">
+        
+        <!-- BARRA LATERAL (SIDEBAR) -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i data-lucide="trending-up" class="brand-icon"></i>
+                <span class="brand-name">VendasMonitor</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="#" class="nav-link active" data-view="dashboard">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link" data-view="vendas">
+                            <i data-lucide="shopping-cart"></i>
+                            <span>Vendas</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link" data-view="vendedores">
+                            <i data-lucide="users"></i>
+                            <span>Vendedores</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link" data-view="relatorios">
+                            <i data-lucide="file-text"></i>
+                            <span>Relatórios e Banco</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar-initials">AD</div>
+                    <div class="user-details">
+                        <span class="user-name" id="session-username">Administrador</span>
+                        <span class="user-role">Nível Acesso: Total</span>
+                    </div>
+                </div>
+                <button id="btn-logout" class="btn-logout" title="Sair do Sistema">
+                    <i data-lucide="log-out"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="main-content">
+            
+            <!-- HEADER SUPERIOR -->
+            <header class="main-header">
+                <div class="header-left">
+                    <!-- Botão Hambúrguer para Mobile -->
+                    <button id="btn-mobile-toggle" class="btn-mobile-toggle">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <h1 id="page-title" class="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <!-- Data Atual -->
+                    <div class="current-date-badge">
+                        <i data-lucide="calendar"></i>
+                        <span id="header-date">--/--/----</span>
+                    </div>
+                    
+                    <!-- Botão Modo Privacidade (Ocultar Valores) -->
+                    <button id="btn-privacy-toggle" class="btn-theme-toggle" title="Modo Privacidade (Ocultar Valores)">
+                        <i data-lucide="eye" class="privacy-open-icon"></i>
+                        <i data-lucide="eye-off" class="privacy-closed-icon hidden"></i>
+                    </button>
+                    
+                    <!-- Botão Alternador de Tema -->
+                    <button id="btn-theme-toggle" class="btn-theme-toggle" title="Alternar Tema Claro/Escuro">
+                        <i data-lucide="sun" class="sun-icon"></i>
+                        <i data-lucide="moon" class="moon-icon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- ÁREA DE CONTEÚDO DINÂMICO (SPA VIEWS) -->
+            <div class="content-container">
+
+                <!-- 1. TELA: DASHBOARD -->
+                <section id="view-dashboard" class="app-view">
+                    <!-- Container de Alertas de Vencimento de Boleto -->
+                    <div id="dashboard-alerts-container" class="hidden" style="margin-bottom: 24px;"></div>
+                    
+                    <!-- Grid de KPIs (Cards de Resumo) -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper sales-icon">
+                                <i data-lucide="shopping-bag"></i>
+                            </div>
+                            <div class="kpi-data">
+                                <h3>Total de Vendas</h3>
+                                <p class="kpi-value" id="kpi-total-vendas">0</p>
+                                <span class="kpi-subtitle">Transações registradas</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper revenue-icon">
+                                <i data-lucide="dollar-sign"></i>
+                            </div>
+                            <div class="kpi-data">
+                                <h3>Valor Total Vendido</h3>
+                                <p class="kpi-value" id="kpi-valor-total">R$ 0,00</p>
+                                <span class="kpi-subtitle">Faturamento bruto</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper ticket-icon">
+                                <i data-lucide="activity"></i>
+                            </div>
+                            <div class="kpi-data">
+                                <h3>Ticket Médio</h3>
+                                <p class="kpi-value" id="kpi-ticket-medio">R$ 0,00</p>
+                                <span class="kpi-subtitle">Média por venda</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper star-icon">
+                                <i data-lucide="award"></i>
+                            </div>
+                            <div class="kpi-data">
+                                <h3>Melhor Vendedor</h3>
+                                <p class="kpi-value" id="kpi-melhor-vendedor">Nenhum</p>
+                                <span class="kpi-subtitle" id="kpi-melhor-vendedor-vendas">0 vendas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout de Gráficos -->
+                    <div class="dashboard-grid">
+                        <!-- Card do Gráfico de Período -->
+                        <div class="dashboard-card card-chart main-chart-card">
+                            <div class="card-header">
+                                <h2>Acompanhamento Temporal das Vendas</h2>
+                                <span class="badge">Período</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-periodo"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card do Gráfico por Vendedor -->
+                        <div class="dashboard-card card-chart">
+                            <div class="card-header">
+                                <h2>Vendas por Vendedor</h2>
+                                <span class="badge">Vendedores</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-vendedor"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Vendas Recentes -->
+                    <div class="dashboard-card margin-top-lg">
+                        <div class="card-header flex-header">
+                            <h2>Vendas Recentes</h2>
+                            <button class="btn btn-secondary btn-sm" id="btn-dashboard-go-sales">
+                                <span>Ver todas</span>
+                                <i data-lucide="arrow-right"></i>
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Vendedor</th>
+                                        <th>Cliente</th>
+                                        <th>Nº da Nota</th>
+                                        <th>Valor</th>
+                                        <th>Data/Hora</th>
+                                        <th>Pagamento</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-sales-tbody">
+                                    <!-- Preenchido dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. TELA: VENDAS (REGISTRO E HISTÓRICO) -->
+                <section id="view-vendas" class="app-view hidden">
+                    <div class="vendas-layout">
+                        <!-- Painel Lateral: Form de Registro -->
+                        <div class="dashboard-card form-panel">
+                            <div class="card-header">
+                                <h2>Registrar Nova Venda</h2>
+                            </div>
+                            <form id="sale-form" class="standard-form">
+                                <div class="input-group">
+                                    <label for="sale-vendedor">Vendedor <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="users" class="input-icon"></i>
+                                        <select id="sale-vendedor" required>
+                                            <option value="" disabled selected>Selecione o vendedor</option>
+                                            <!-- Opções dinâmicas -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-cliente">Nome do Cliente <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="user" class="input-icon"></i>
+                                        <input type="text" id="sale-cliente" placeholder="Nome do cliente" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-nota">Número da Nota <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="file-text" class="input-icon"></i>
+                                        <input type="text" id="sale-nota" placeholder="Digite o número da nota" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-valor">Valor (R$) <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="dollar-sign" class="input-icon"></i>
+                                        <input type="number" id="sale-valor" step="0.01" min="0.01" placeholder="0.00" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-data">Data/Hora <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="datetime-local" id="sale-data" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-pagamento">Forma de Pagamento <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="credit-card" class="input-icon"></i>
+                                        <select id="sale-pagamento" required>
+                                            <option value="" disabled selected>Selecione a forma</option>
+                                            <option value="Pix">Pix</option>
+                                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                            <option value="Cartão de Débito">Cartão de Débito</option>
+                                            <option value="Dinheiro">Dinheiro</option>
+                                            <option value="Boleto">Boleto</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Campo condicional de Detalhes do Boleto (Oculto inicialmente) -->
+                                <div id="group-boleto-container" class="hidden">
+                                    <div class="input-group" style="margin-bottom: 16px;">
+                                        <label for="sale-vencimento-boleto">Data de Vencimento do 1º Boleto <span class="required">*</span></label>
+                                        <div class="input-wrapper">
+                                            <i data-lucide="calendar" class="input-icon"></i>
+                                            <input type="date" id="sale-vencimento-boleto">
+                                        </div>
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 16px;">
+                                        <label for="sale-quantidade-boleto">Quantidade de Boletos <span class="required">*</span></label>
+                                        <div class="input-wrapper">
+                                            <i data-lucide="hash" class="input-icon"></i>
+                                            <input type="number" id="sale-quantidade-boleto" min="1" max="24" value="1">
+                                        </div>
+                                    </div>
+                                    <div id="boleto-division-preview" style="margin-bottom: 16px; font-weight: 600; color: var(--success); font-size: 0.85rem; display: none; padding: 10px 12px; background: var(--success-light); border-left: 3px solid var(--success); border-radius: 4px;">
+                                        Valor por boleto: <span id="boleto-division-value" style="font-weight: 700;">R$ 0,00</span>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-obs">Observações (Opcional)</label>
+                                    <textarea id="sale-obs" rows="3" placeholder="Detalhes adicionais da venda..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <span>Registrar Venda</span>
+                                    <i data-lucide="check-circle"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Painel Principal: Histórico de Vendas -->
+                        <div class="dashboard-card table-panel">
+                            <div class="card-header">
+                                <h2>Histórico de Vendas</h2>
+                            </div>
+                            
+                            <!-- Barra de Filtros -->
+                            <div class="filters-bar">
+                                <div class="filter-search">
+                                    <div class="input-wrapper">
+                                        <i data-lucide="search" class="input-icon"></i>
+                                        <input type="text" id="filter-search-input" placeholder="Pesquisar cliente ou nº da nota...">
+                                    </div>
+                                </div>
+                                <div class="filter-controls-grid">
+                                    <div class="input-wrapper select-wrapper">
+                                        <i data-lucide="users" class="input-icon"></i>
+                                        <select id="filter-vendedor">
+                                            <option value="todos">Todos Vendedores</option>
+                                            <!-- Preenchido dinamicamente -->
+                                        </select>
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="date" id="filter-data-inicio" placeholder="De">
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="date" id="filter-data-fim" placeholder="Até">
+                                    </div>
+                                    <button id="btn-limpar-filtros" class="btn btn-secondary btn-icon" title="Limpar Filtros">
+                                        <i data-lucide="rotate-ccw"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tabela do Histórico -->
+                            <div class="table-responsive select-table-scroll">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Vendedor</th>
+                                            <th>Cliente</th>
+                                            <th>Nº da Nota</th>
+                                            <th>Valor</th>
+                                            <th>Data/Hora</th>
+                                            <th>Pagamento</th>
+                                            <th class="actions-column">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sales-history-tbody">
+                                        <!-- Preenchido dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Paginação/Info -->
+                            <div class="table-footer-meta">
+                                <span id="table-sales-count">Mostrando 0 de 0 registros</span>
+                                <div class="pagination-buttons">
+                                    <button class="btn btn-secondary btn-xs" id="btn-page-prev"><i data-lucide="chevron-left"></i></button>
+                                    <span id="table-page-number">1</span>
+                                    <button class="btn btn-secondary btn-xs" id="btn-page-next"><i data-lucide="chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. TELA: VENDEDORES -->
+                <section id="view-vendedores" class="app-view hidden">
+                    <div class="vendedores-layout">
+                        <!-- Painel Esquerdo: Cadastro -->
+                        <div class="dashboard-card form-panel">
+                            <div class="card-header">
+                                <h2 id="title-form-vendedor">Cadastrar Vendedor</h2>
+                            </div>
+                            <form id="seller-form" class="standard-form">
+                                <input type="hidden" id="seller-id-edit">
+                                <div class="input-group">
+                                    <label for="seller-name">Nome Completo <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="user" class="input-icon"></i>
+                                        <input type="text" id="seller-name" placeholder="Ex: João Silva" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="seller-email">E-mail <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="mail" class="input-icon"></i>
+                                        <input type="email" id="seller-email" placeholder="joao@vendas.com" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="seller-phone">Telefone</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="phone" class="input-icon"></i>
+                                        <input type="text" id="seller-phone" placeholder="(11) 99999-9999">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="seller-status">Status</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="toggle-left" class="input-icon"></i>
+                                        <select id="seller-status">
+                                            <option value="Ativo" selected>Ativo</option>
+                                            <option value="Inativo">Inativo</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex-buttons-row">
+                                    <button type="submit" class="btn btn-primary flex-grow">
+                                        <span id="btn-seller-submit-text">Cadastrar Vendedor</span>
+                                        <i data-lucide="user-plus"></i>
+                                    </button>
+                                    <button type="button" id="btn-cancel-edit-seller" class="btn btn-secondary hidden" title="Cancelar Edição">
+                                        <i data-lucide="x"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Painel Direito: Listagem -->
+                        <div class="dashboard-card table-panel">
+                            <div class="card-header">
+                                <h2>Lista de Vendedores</h2>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>E-mail</th>
+                                            <th>Telefone</th>
+                                            <th>Vendas Realizadas</th>
+                                            <th>Total Faturado</th>
+                                            <th>Status</th>
+                                            <th class="actions-column">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sellers-list-tbody">
+                                        <!-- Preenchido dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. TELA: RELATÓRIOS E BANCO -->
+                <section id="view-relatorios" class="app-view hidden">
+                    <div class="relatorios-grid">
+                        
+                        <!-- Painel: Exportação de Relatórios -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2>Exportação de Dados & Relatórios</h2>
+                                <p class="card-subtitle">Exporte o histórico de vendas filtrado ou completo nos formatos desejados</p>
+                            </div>
+                            
+                            <div class="report-actions-container">
+                                <div class="report-option-card">
+                                    <div class="option-icon-wrapper pdf-icon">
+                                        <i data-lucide="file-text"></i>
+                                    </div>
+                                    <div class="option-details">
+                                        <h3>Visualizar e Imprimir PDF</h3>
+                                        <p>Gera um relatório otimizado para impressão com KPIs e tabelas limpas.</p>
+                                    </div>
+                                    <button id="btn-export-pdf" class="btn btn-primary">
+                                        <span>Imprimir PDF</span>
+                                        <i data-lucide="printer"></i>
+                                    </button>
+                                </div>
+
+                                <div class="report-option-card">
+                                    <div class="option-icon-wrapper excel-icon">
+                                        <i data-lucide="table"></i>
+                                    </div>
+                                    <div class="option-details">
+                                        <h3>Exportar planilha Excel (CSV)</h3>
+                                        <p>Exporta o histórico completo estruturado em planilha XLS/CSV compatível.</p>
+                                    </div>
+                                    <button id="btn-export-excel" class="btn btn-success">
+                                        <span>Exportar Excel</span>
+                                        <i data-lucide="download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Backup e Segurança do Banco de Dados -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2>Banco de Dados Seguro & Backup</h2>
+                                <p class="card-subtitle">Opções de auditoria, criptografia e cópias de segurança (RNF03, RNF05, RNF08)</p>
+                            </div>
+
+                            <div class="backup-actions-grid">
+                                <div class="backup-status-widget">
+                                    <div class="status-indicator-row">
+                                        <span class="status-bullet active"></span>
+                                        <span class="status-text">Criptografia AES-256 Ativa</span>
+                                    </div>
+                                    <p class="status-desc">O banco local está protegido. Os dados brutos no `localStorage` estão ilegíveis sem a chave da sua sessão.</p>
+                                </div>
+
+                                <div class="backup-buttons-row">
+                                    <button id="btn-backup-export" class="btn btn-secondary">
+                                        <i data-lucide="shield-alert"></i>
+                                        <span>Exportar Backup (Criptografado)</span>
+                                    </button>
+                                    
+                                    <div class="import-file-wrapper">
+                                        <label for="backup-import-file" class="btn btn-secondary">
+                                            <i data-lucide="upload-cloud"></i>
+                                            <span>Restaurar Backup</span>
+                                        </label>
+                                        <input type="file" id="backup-import-file" accept=".json" class="hidden-file-input">
+                                    </div>
+                                    
+                                    <button id="btn-clear-db" class="btn btn-danger">
+                                        <i data-lucide="trash-2"></i>
+                                        <span>Limpar Banco de Dados</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Resumo Geral Consolidado (para o relatório impresso) -->
+                        <div class="dashboard-card col-span-2 select-print-section">
+                            <div class="card-header print-only-header">
+                                <h1>RELATÓRIO CONSOLIDADO DE VENDAS</h1>
+                                <p class="print-date" id="print-report-date">Emissão: --/--/----</p>
+                            </div>
+                            <div class="card-header">
+                                <h2>Métricas Consolidadas por Vendedor</h2>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table print-compact-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome do Vendedor</th>
+                                            <th>Quantidade de Vendas</th>
+                                            <th>Faturamento Total (R$)</th>
+                                            <th>Participação (%)</th>
+                                            <th>Ticket Médio (R$)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reports-consolidation-tbody">
+                                        <!-- Preenchido dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO / AÇÃO -->
+    <div id="confirm-modal" class="modal-wrapper hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <i data-lucide="alert-triangle" class="modal-icon-warning"></i>
+                <h3 id="modal-title">Confirmação</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message">Tem certeza que deseja realizar esta ação?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-modal-cancel" class="btn btn-secondary">Cancelar</button>
+                <button id="btn-modal-confirm" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
