@@ -8,6 +8,9 @@ import { hasRegisteredUsers, registerUser, loginUser, logoutUser, getCurrentUser
 import { bindUIEvents, navigateTo, showToast } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Limpa estado legado do menu lateral colapsável
+    localStorage.removeItem('sidebar_collapsed');
+
     // 1. Inicializa o estado dos ícones Lucide carregados via CDN
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
