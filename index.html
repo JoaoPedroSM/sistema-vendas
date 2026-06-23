@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- CSS Estilos -->
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 
     <!-- Bibliotecas Locais (Alta Disponibilidade & Offline) -->
     <!-- CryptoJS para Criptografia local -->
@@ -37,7 +37,7 @@
     </script>
 
     <!-- JS Módulos da SPA (defer + type="module") -->
-    <script type="module" src="js/app.js?v=2" defer></script>
+    <script type="module" src="js/app.js?v=3" defer></script>
 </head>
 <body class="dark-theme"> <!-- Tema escuro elegante por padrão -->
 
@@ -137,56 +137,59 @@
     <!-- APLICAÇÃO PRINCIPAL (Visível após autenticação) -->
     <div id="app-container" class="app-wrapper hidden">
         
-        <!-- BARRA LATERAL (SIDEBAR) -->
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <i data-lucide="trending-up" class="brand-icon"></i>
-                <span class="brand-name">VendasMonitor</span>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <ul>
-                    <li>
-                        <a href="#" class="nav-link active" data-view="dashboard">
-                            <i data-lucide="layout-dashboard"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="nav-link" data-view="vendas">
-                            <i data-lucide="shopping-cart"></i>
-                            <span>Vendas</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="nav-link" data-view="vendedores">
-                            <i data-lucide="users"></i>
-                            <span>Vendedores</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="nav-link" data-view="relatorios">
-                            <i data-lucide="file-text"></i>
-                            <span>Relatórios e Banco</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar" id="user-avatar-initials">AD</div>
-                    <div class="user-details">
-                        <span class="user-name" id="session-username">Administrador</span>
-                        <span class="user-role">Nível Acesso: Total</span>
-                    </div>
+        <!-- CONTAINER DA BARRA LATERAL -->
+        <div class="sidebar-container">
+            <!-- BARRA LATERAL (SIDEBAR) -->
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <i data-lucide="trending-up" class="brand-icon"></i>
+                    <span class="brand-name">VendasMonitor</span>
                 </div>
-                <button id="btn-logout" class="btn-logout" title="Sair do Sistema">
-                    <i data-lucide="log-out"></i>
-                    <span>Sair</span>
-                </button>
-            </div>
-        </aside>
+                
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li>
+                            <a href="#" class="nav-link active" data-view="dashboard">
+                                <i data-lucide="layout-dashboard"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-view="vendas">
+                                <i data-lucide="shopping-cart"></i>
+                                <span>Vendas</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-view="vendedores">
+                                <i data-lucide="users"></i>
+                                <span>Vendedores</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-view="relatorios">
+                                <i data-lucide="file-text"></i>
+                                <span>Relatórios e Banco</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-info">
+                        <div class="user-avatar" id="user-avatar-initials">AD</div>
+                        <div class="user-details">
+                            <span class="user-name" id="session-username">Administrador</span>
+                            <span class="user-role">Nível Acesso: Total</span>
+                        </div>
+                    </div>
+                    <button id="btn-logout" class="btn-logout" title="Sair do Sistema">
+                        <i data-lucide="log-out"></i>
+                        <span>Sair</span>
+                    </button>
+                </div>
+            </aside>
+        </div>
 
         <!-- CONTEÚDO PRINCIPAL -->
         <main class="main-content">

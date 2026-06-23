@@ -1606,4 +1606,95 @@ input, select, textarea, button {
     opacity: 0.3;
 }
 
+/* ==========================================================================
+   BARRA LATERAL COLAPSÁVEL (HOVER NO DESKTOP & FECHAMENTO NO MOBILE)
+   ========================================================================== */
+
+@media (min-width: 769px) {
+    .sidebar-container {
+        width: var(--sidebar-collapsed-width);
+        flex-shrink: 0;
+        position: relative;
+    }
+    
+    .sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: var(--sidebar-collapsed-width);
+        height: 100%;
+        overflow: hidden;
+        transition: width var(--transition-normal) ease, box-shadow var(--transition-normal) ease;
+        z-index: 1000;
+    }
+    
+    .sidebar:hover {
+        width: var(--sidebar-width);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Centralização dos itens no estado colapsado (80px) */
+    .sidebar-brand {
+        padding: 0 27px !important;
+        transition: padding var(--transition-normal) ease;
+    }
+    .sidebar:hover .sidebar-brand {
+        padding: 0 24px !important;
+    }
+    
+    .sidebar-nav {
+        padding: 24px 10px !important;
+        transition: padding var(--transition-normal) ease;
+    }
+    .sidebar:hover .sidebar-nav {
+        padding: 24px 16px !important;
+    }
+    
+    .nav-link {
+        padding: 12px 20px !important;
+        transition: padding var(--transition-normal) ease, background-color var(--transition-fast) ease, color var(--transition-fast) ease;
+    }
+    .sidebar:hover .nav-link {
+        padding: 12px 16px !important;
+    }
+    
+    .sidebar-footer {
+        padding: 20px 20px !important;
+        transition: padding var(--transition-normal) ease;
+    }
+    .sidebar:hover .sidebar-footer {
+        padding: 20px 16px !important;
+    }
+    
+    /* Transição suave e atraso para exibição dos textos, ocultação instantânea */
+    .sidebar .brand-name,
+    .sidebar .nav-link span,
+    .sidebar .user-details,
+    .sidebar .btn-logout span {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.1s ease, visibility 0.1s ease;
+        white-space: nowrap;
+    }
+    
+    .sidebar:hover .brand-name,
+    .sidebar:hover .nav-link span,
+    .sidebar:hover .user-details,
+    .sidebar:hover .btn-logout span {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity var(--transition-normal) ease, visibility var(--transition-normal) ease;
+        transition-delay: 0.12s;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar-container {
+        width: 0 !important;
+        height: 0 !important;
+        overflow: visible !important;
+        position: absolute !important;
+    }
+}
+
 

@@ -1078,4 +1078,17 @@ export function bindUIEvents() {
             showToast('Modo Privacidade', 'Valores financeiros estão visíveis novamente.', 'info');
         }
     });
+
+    // Fecha o menu lateral móvel ao clicar fora dele
+    document.addEventListener('click', (e) => {
+        const sidebar = document.querySelector('.sidebar');
+        const mobileToggle = document.getElementById('btn-mobile-toggle');
+        
+        if (sidebar && sidebar.classList.contains('active')) {
+            // Se o clique foi fora do menu lateral E fora do botão de hambúrguer que o abre
+            if (!sidebar.contains(e.target) && !mobileToggle?.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+        }
+    });
 }
