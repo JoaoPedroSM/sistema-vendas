@@ -61,8 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 loginForm.classList.remove('hidden');
                 
                 // Preenche o usuário criado no login para facilitar
-                document.getElementById('login-username').value = username;
-                document.getElementById('login-password').focus();
+                const elLoginUser = document.getElementById('login-username');
+                if (elLoginUser) elLoginUser.value = username;
+                const elLoginPass = document.getElementById('login-password');
+                if (elLoginPass) elLoginPass.focus();
             }
         } catch (error) {
             showToast('Falha no Cadastro', error.message, 'danger');
@@ -157,9 +159,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const sessionUser = loginUser(username, password);
                         if (sessionUser) {
                             // Configura detalhes da sessão na UI
-                            document.getElementById('session-username').textContent = sessionUser.username;
+                            const elSessionUser = document.getElementById('session-username');
+                            if (elSessionUser) elSessionUser.textContent = sessionUser.username;
                             const initials = sessionUser.username.substring(0, 2).toUpperCase();
-                            document.getElementById('user-avatar-initials').textContent = initials;
+                            const elAvatar = document.getElementById('user-avatar-initials');
+                            if (elAvatar) elAvatar.textContent = initials;
 
                             // Salva último usuário logado descriptografado de apoio
                             localStorage.setItem('last_logged_user', sessionUser.username);
@@ -197,9 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (checkLockout()) return;
 
-        const username = document.getElementById('login-username').value;
-        const password = document.getElementById('login-password').value;
-        const rememberMe = document.getElementById('login-remember')?.checked;
+        const username = document.getElementById('login-username')?.value || '';
+        const password = document.getElementById('login-password')?.value || '';
+        const rememberMe = document.getElementById('login-remember')?.checked || false;
 
         try {
             const sessionUser = loginUser(username, password);
@@ -224,9 +228,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
 
                 // Configura detalhes da sessão na UI
-                document.getElementById('session-username').textContent = sessionUser.username;
+                const elSessionUser = document.getElementById('session-username');
+                if (elSessionUser) elSessionUser.textContent = sessionUser.username;
                 const initials = sessionUser.username.substring(0, 2).toUpperCase();
-                document.getElementById('user-avatar-initials').textContent = initials;
+                const elAvatar = document.getElementById('user-avatar-initials');
+                if (elAvatar) elAvatar.textContent = initials;
 
                 // Salva último usuário logado descriptografado de apoio
                 localStorage.setItem('last_logged_user', sessionUser.username);
@@ -305,8 +311,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Preenche o campo de usuário com o último logado se houver
             const lastUser = localStorage.getItem('last_logged_user');
             if (lastUser) {
-                document.getElementById('login-username').value = lastUser;
-                document.getElementById('login-password').focus();
+                const elLoginUser = document.getElementById('login-username');
+                if (elLoginUser) elLoginUser.value = lastUser;
+                const elLoginPass = document.getElementById('login-password');
+                if (elLoginPass) elLoginPass.focus();
             }
         }
     }

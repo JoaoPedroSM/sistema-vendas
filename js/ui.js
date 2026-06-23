@@ -305,11 +305,16 @@ function refreshDashboard() {
     });
 
     // Renderiza KPIs
-    document.getElementById('kpi-total-vendas').textContent = totalSales;
-    document.getElementById('kpi-valor-total').textContent = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    document.getElementById('kpi-ticket-medio').textContent = averageTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    document.getElementById('kpi-melhor-vendedor').textContent = bestSeller;
-    document.getElementById('kpi-melhor-vendedor-vendas').textContent = `${bestSellerCount} vendas`;
+    const elKpiTotal = document.getElementById('kpi-total-vendas');
+    if (elKpiTotal) elKpiTotal.textContent = totalSales;
+    const elKpiValor = document.getElementById('kpi-valor-total');
+    if (elKpiValor) elKpiValor.textContent = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const elKpiTicket = document.getElementById('kpi-ticket-medio');
+    if (elKpiTicket) elKpiTicket.textContent = averageTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const elKpiVendedor = document.getElementById('kpi-melhor-vendedor');
+    if (elKpiVendedor) elKpiVendedor.textContent = bestSeller;
+    const elKpiVendedorVendas = document.getElementById('kpi-melhor-vendedor-vendas');
+    if (elKpiVendedorVendas) elKpiVendedorVendas.textContent = `${bestSellerCount} vendas`;
 
     // Atualiza gráficos
     updateCharts(sales, sellers);
@@ -383,10 +388,10 @@ function refreshSalesPage() {
  */
 function applySalesFilters() {
     const sales = getSales();
-    const searchVal = document.getElementById('filter-search-input').value.toLowerCase().trim();
-    const sellerVal = document.getElementById('filter-vendedor').value;
-    const startVal = document.getElementById('filter-data-inicio').value;
-    const endVal = document.getElementById('filter-data-fim').value;
+    const searchVal = (document.getElementById('filter-search-input')?.value || '').toLowerCase().trim();
+    const sellerVal = document.getElementById('filter-vendedor')?.value || 'todos';
+    const startVal = document.getElementById('filter-data-inicio')?.value || '';
+    const endVal = document.getElementById('filter-data-fim')?.value || '';
 
     filteredSalesList = sales.filter(sale => {
         // Busca textual (cliente ou número da nota)
@@ -438,12 +443,18 @@ function renderSalesTable() {
     const pageSales = filteredSalesList.slice(startIndex, startIndex + salesPageSize);
 
     // Atualiza controles de rodapé
-    document.getElementById('table-sales-count').textContent = totalRecords > 0 
-        ? `Mostrando ${startIndex + 1} a ${Math.min(startIndex + salesPageSize, totalRecords)} de ${totalRecords} vendas`
-        : `Nenhuma venda encontrada`;
-    document.getElementById('table-page-number').textContent = salesPage;
-    document.getElementById('btn-page-prev').disabled = salesPage === 1;
-    document.getElementById('btn-page-next').disabled = salesPage === totalPages;
+    const countEl = document.getElementById('table-sales-count');
+    if (countEl) {
+        countEl.textContent = totalRecords > 0 
+            ? `Mostrando ${startIndex + 1} a ${Math.min(startIndex + salesPageSize, totalRecords)} de ${totalRecords} vendas`
+            : `Nenhuma venda encontrada`;
+    }
+    const pageEl = document.getElementById('table-page-number');
+    if (pageEl) pageEl.textContent = salesPage;
+    const btnPrev = document.getElementById('btn-page-prev');
+    if (btnPrev) btnPrev.disabled = salesPage === 1;
+    const btnNext = document.getElementById('btn-page-next');
+    if (btnNext) btnNext.disabled = salesPage === totalPages;
 
     if (pageSales.length === 0) {
         tbody.innerHTML = `<tr><td colspan="14" class="text-muted text-center" style="text-align: center;">Nenhuma venda encontrada.</td></tr>`;
@@ -592,15 +603,24 @@ function refreshSellersPage() {
             const id = e.currentTarget.dataset.id;
             const seller = sellers.find(s => s.id === id);
             if (seller) {
-                document.getElementById('seller-id-edit').value = seller.id;
-                document.getElementById('seller-name').value = seller.name;
-                document.getElementById('seller-email').value = seller.email;
-                document.getElementById('seller-phone').value = seller.phone;
-                document.getElementById('seller-status').value = seller.status;
+                const elId = document.getElementById('seller-id-edit');
+                if (elId) elId.value = seller.id;
+                const elName = document.getElementById('seller-name');
+                if (elName) elName.value = seller.name;
+                const elEmail = document.getElementById('seller-email');
+                if (elEmail) elEmail.value = seller.email;
+                const elPhone = document.getElementById('seller-phone');
+                if (elPhone) elPhone.value = seller.phone;
+                const elStatus = document.getElementById('seller-status');
+                if (elStatus) elStatus.value = seller.status;
                 
-                document.getElementById('title-form-vendedor').textContent = 'Editar Vendedor';
-                document.getElementById('btn-seller-submit-text').textContent = 'Salvar Alterações';
-                document.getElementById('btn-cancel-edit-seller').classList.remove('hidden');
+                const elTitle = document.getElementById('title-form-vendedor');
+                if (elTitle) elTitle.textContent = 'Editar Vendedor';
+                const elBtnText = document.getElementById('btn-seller-submit-text');
+                if (elBtnText) elBtnText.textContent = 'Salvar Alterações';
+                const elCancelBtn = document.getElementById('btn-cancel-edit-seller');
+                if (elCancelBtn) elCancelBtn.classList.remove('hidden');
+                
                 showToast('Modo de Edição', `Editando dados de ${seller.name}.`, 'info');
             }
         });
@@ -633,11 +653,20 @@ function refreshSellersPage() {
  * Reseta o formulário de cadastro de vendedores
  */
 function resetSellerForm() {
-    document.getElementById('seller-form').reset();
-    document.getElementById('seller-id-edit').value = '';
-    document.getElementById('title-form-vendedor').textContent = 'Cadastrar Vendedor';
-    document.getElementById('btn-seller-submit-text').textContent = 'Cadastrar Vendedor';
-    document.getElementById('btn-cancel-edit-seller').classList.add('hidden');
+    const sellerForm = document.getElementById('seller-form');
+    if (sellerForm) sellerForm.reset();
+    
+    const sellerIdEdit = document.getElementById('seller-id-edit');
+    if (sellerIdEdit) sellerIdEdit.value = '';
+    
+    const titleFormVendedor = document.getElementById('title-form-vendedor');
+    if (titleFormVendedor) titleFormVendedor.textContent = 'Cadastrar Vendedor';
+    
+    const btnSellerSubmitText = document.getElementById('btn-seller-submit-text');
+    if (btnSellerSubmitText) btnSellerSubmitText.textContent = 'Cadastrar Vendedor';
+    
+    const btnCancelEditSeller = document.getElementById('btn-cancel-edit-seller');
+    if (btnCancelEditSeller) btnCancelEditSeller.classList.add('hidden');
 }
 
 /**
@@ -721,11 +750,11 @@ export function bindUIEvents() {
     const sellerForm = document.getElementById('seller-form');
     sellerForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const idEdit = document.getElementById('seller-id-edit').value;
-        const name = document.getElementById('seller-name').value.trim();
-        const email = document.getElementById('seller-email').value.trim();
-        const phone = document.getElementById('seller-phone').value.trim();
-        const status = document.getElementById('seller-status').value;
+        const idEdit = document.getElementById('seller-id-edit')?.value || '';
+        const name = (document.getElementById('seller-name')?.value || '').trim();
+        const email = (document.getElementById('seller-email')?.value || '').trim();
+        const phone = (document.getElementById('seller-phone')?.value || '').trim();
+        const status = document.getElementById('seller-status')?.value || 'Ativo';
 
         if (idEdit) {
             // Edição
@@ -810,21 +839,21 @@ export function bindUIEvents() {
     const saleForm = document.getElementById('sale-form');
     saleForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const vendedorId = document.getElementById('sale-vendedor').value;
-        const cliente = document.getElementById('sale-cliente').value.trim();
-        const tipo = document.getElementById('sale-tipo').value.trim() || 'Venda';
-        const proposta = document.getElementById('sale-proposta').value.trim();
-        const executante = document.getElementById('sale-executante').value.trim();
-        const nota = document.getElementById('sale-nota').value.trim();
-        const valor = document.getElementById('sale-valor').value;
-        const valor2Val = document.getElementById('sale-valor2').value;
+        const vendedorId = document.getElementById('sale-vendedor')?.value || '';
+        const cliente = document.getElementById('sale-cliente')?.value.trim() || '';
+        const tipo = document.getElementById('sale-tipo')?.value.trim() || 'Venda';
+        const proposta = document.getElementById('sale-proposta')?.value.trim() || '';
+        const executante = document.getElementById('sale-executante')?.value.trim() || '';
+        const nota = document.getElementById('sale-nota')?.value.trim() || '';
+        const valor = document.getElementById('sale-valor')?.value || '0';
+        const valor2Val = document.getElementById('sale-valor2')?.value || '';
         const valor2 = valor2Val ? parseFloat(valor2Val) : null;
-        const dataVal = document.getElementById('sale-data').value;
-        const pagamento = document.getElementById('sale-pagamento').value;
-        const vencimento = document.getElementById('sale-vencimento').value;
-        const quantidade = document.getElementById('sale-quantidade-boleto').value;
-        const obs = document.getElementById('sale-obs').value.trim();
-        const obs2 = document.getElementById('sale-obs2').value.trim();
+        const dataVal = document.getElementById('sale-data')?.value || '';
+        const pagamento = document.getElementById('sale-pagamento')?.value || '';
+        const vencimento = document.getElementById('sale-vencimento')?.value || '';
+        const quantidade = document.getElementById('sale-quantidade-boleto')?.value || '1';
+        const obs = document.getElementById('sale-obs')?.value.trim() || '';
+        const obs2 = document.getElementById('sale-obs2')?.value.trim() || '';
 
         try {
             const newSale = addSale(
@@ -845,11 +874,13 @@ export function bindUIEvents() {
                 if (previewContainer) previewContainer.style.display = 'none';
                 
                 // Redefine valor padrão para o tipo
-                document.getElementById('sale-tipo').value = 'Venda';
+                const saleTipoInput = document.getElementById('sale-tipo');
+                if (saleTipoInput) saleTipoInput.value = 'Venda';
                 
                 const now = new Date();
                 const offset = now.getTimezoneOffset() * 60000;
-                document.getElementById('sale-data').value = (new Date(now - offset)).toISOString().slice(0, 16);
+                const saleDataInput = document.getElementById('sale-data');
+                if (saleDataInput) saleDataInput.value = (new Date(now - offset)).toISOString().slice(0, 16);
                 
                 refreshSalesPage();
             }
@@ -881,10 +912,18 @@ export function bindUIEvents() {
 
     // Botão Limpar Filtros
     document.getElementById('btn-limpar-filtros')?.addEventListener('click', () => {
-        document.getElementById('filter-search-input').value = '';
-        document.getElementById('filter-vendedor').value = 'todos';
-        document.getElementById('filter-data-inicio').value = '';
-        document.getElementById('filter-data-fim').value = '';
+        const fSearch = document.getElementById('filter-search-input');
+        if (fSearch) fSearch.value = '';
+        
+        const fVendedor = document.getElementById('filter-vendedor');
+        if (fVendedor) fVendedor.value = 'todos';
+        
+        const fDataInicio = document.getElementById('filter-data-inicio');
+        if (fDataInicio) fDataInicio.value = '';
+        
+        const fDataFim = document.getElementById('filter-data-fim');
+        if (fDataFim) fDataFim.value = '';
+        
         salesPage = 1;
         applySalesFilters();
         showToast('Filtros Limpos', 'A listagem está mostrando todas as vendas.', 'info');
