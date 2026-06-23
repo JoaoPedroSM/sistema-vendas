@@ -311,12 +311,19 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Vendedor</th>
+                                        <th>Observações</th>
+                                        <th>Proposta</th>
                                         <th>Cliente</th>
-                                        <th>Nº da Nota</th>
+                                        <th>Tipo</th>
                                         <th>Valor</th>
-                                        <th>Data/Hora</th>
+                                        <th>Data</th>
+                                        <th>Executante</th>
+                                        <th>Venda (NF)</th>
+                                        <th>Valor2</th>
                                         <th>Pagamento</th>
+                                        <th>Vencimento</th>
+                                        <th>Vendedor</th>
+                                        <th>Observações (2)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recent-sales-tbody">
@@ -347,14 +354,35 @@
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="sale-cliente">Nome do Cliente <span class="required">*</span></label>
+                                    <label for="sale-cliente">Cliente <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i data-lucide="user" class="input-icon"></i>
                                         <input type="text" id="sale-cliente" placeholder="Nome do cliente" required>
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="sale-nota">Número da Nota <span class="required">*</span></label>
+                                    <label for="sale-tipo">Tipo <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="tag" class="input-icon"></i>
+                                        <input type="text" id="sale-tipo" value="Venda" placeholder="Ex: Venda, Serviço, Orçamento" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-proposta">Proposta</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="file-spreadsheet" class="input-icon"></i>
+                                        <input type="text" id="sale-proposta" placeholder="Número ou código da proposta">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-executante">Executante</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="user-check" class="input-icon"></i>
+                                        <input type="text" id="sale-executante" placeholder="Quem executou a venda/serviço">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-nota">Venda (NF) <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i data-lucide="file-text" class="input-icon"></i>
                                         <input type="text" id="sale-nota" placeholder="Digite o número da nota" required>
@@ -368,18 +396,25 @@
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="sale-data">Data/Hora <span class="required">*</span></label>
+                                    <label for="sale-valor2">Valor2 (R$)</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="dollar-sign" class="input-icon"></i>
+                                        <input type="number" id="sale-valor2" step="0.01" min="0.00" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-data">Data <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i data-lucide="calendar" class="input-icon"></i>
                                         <input type="datetime-local" id="sale-data" required>
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="sale-pagamento">Forma de Pagamento <span class="required">*</span></label>
+                                    <label for="sale-pagamento">Pagamento <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i data-lucide="credit-card" class="input-icon"></i>
                                         <select id="sale-pagamento" required>
-                                            <option value="" disabled selected>Selecione a forma</option>
+                                            <option value="" disabled selected>Selecione o pagamento</option>
                                             <option value="Pix">Pix</option>
                                             <option value="Cartão de Crédito">Cartão de Crédito</option>
                                             <option value="Cartão de Débito">Cartão de Débito</option>
@@ -388,16 +423,16 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="input-group">
+                                    <label for="sale-vencimento">Vencimento</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="date" id="sale-vencimento">
+                                    </div>
+                                </div>
                                 
                                 <!-- Campo condicional de Detalhes do Boleto (Oculto inicialmente) -->
                                 <div id="group-boleto-container" class="hidden">
-                                    <div class="input-group" style="margin-bottom: 16px;">
-                                        <label for="sale-vencimento-boleto">Data de Vencimento do 1º Boleto <span class="required">*</span></label>
-                                        <div class="input-wrapper">
-                                            <i data-lucide="calendar" class="input-icon"></i>
-                                            <input type="date" id="sale-vencimento-boleto">
-                                        </div>
-                                    </div>
                                     <div class="input-group" style="margin-bottom: 16px;">
                                         <label for="sale-quantidade-boleto">Quantidade de Boletos <span class="required">*</span></label>
                                         <div class="input-wrapper">
@@ -411,7 +446,11 @@
                                 </div>
                                 <div class="input-group">
                                     <label for="sale-obs">Observações (Opcional)</label>
-                                    <textarea id="sale-obs" rows="3" placeholder="Detalhes adicionais da venda..."></textarea>
+                                    <textarea id="sale-obs" rows="2" placeholder="Detalhes adicionais da venda..."></textarea>
+                                </div>
+                                <div class="input-group">
+                                    <label for="sale-obs2">Observações (2) (Opcional)</label>
+                                    <textarea id="sale-obs2" rows="2" placeholder="Observações adicionais secundárias..."></textarea>
                                 </div>
                                 <button type="submit" class="btn btn-primary btn-block">
                                     <span>Registrar Venda</span>
@@ -460,16 +499,22 @@
                             <div class="table-responsive select-table-scroll">
                                 <table class="data-table">
                                     <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Vendedor</th>
-                                            <th>Cliente</th>
-                                            <th>Nº da Nota</th>
-                                            <th>Valor</th>
-                                            <th>Data/Hora</th>
-                                            <th>Pagamento</th>
-                                            <th class="actions-column">Ações</th>
-                                        </tr>
+                                    <tr>
+                                        <th>Observações</th>
+                                        <th>Proposta</th>
+                                        <th>Cliente</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Data</th>
+                                        <th>Executante</th>
+                                        <th>Venda (NF)</th>
+                                        <th>Valor2</th>
+                                        <th>Pagamento</th>
+                                        <th>Vencimento</th>
+                                        <th>Vendedor</th>
+                                        <th>Observações (2)</th>
+                                        <th class="actions-column">Ações</th>
+                                    </tr>
                                     </thead>
                                     <tbody id="sales-history-tbody">
                                         <!-- Preenchido dinamicamente -->

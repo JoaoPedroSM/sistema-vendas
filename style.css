@@ -876,6 +876,7 @@ input, select, textarea, button {
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    white-space: nowrap;
 }
 
 .light-theme .data-table th {
@@ -886,6 +887,7 @@ input, select, textarea, button {
     padding: 14px 16px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .data-table tbody tr {

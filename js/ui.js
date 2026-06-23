@@ -320,16 +320,23 @@ function refreshDashboard() {
     
     if (tbody) {
         if (recentSales.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="text-align: center;">Nenhuma venda cadastrada.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="13" class="text-muted text-center" style="text-align: center;">Nenhuma venda cadastrada.</td></tr>`;
         } else {
             tbody.innerHTML = recentSales.map(sale => `
                 <tr>
-                    <td style="font-weight: 600;">${escapeHTML(sale.vendedorNome)}</td>
+                    <td>${escapeHTML(sale.observacoes)}</td>
+                    <td>${escapeHTML(sale.proposta)}</td>
                     <td>${escapeHTML(sale.cliente)}</td>
-                    <td><span class="badge badge-primary">NF: ${escapeHTML(sale.numeroNota)}</span></td>
+                    <td>${escapeHTML(sale.tipo)}</td>
                     <td class="money-cell" style="font-weight: 700; color: var(--success);">${sale.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                    <td>${new Date(sale.data).toLocaleDateString('pt-BR')} ${new Date(sale.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>${new Date(sale.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${escapeHTML(sale.executante)}</td>
+                    <td><span class="badge badge-primary">${escapeHTML(sale.numeroNota)}</span></td>
+                    <td class="money-cell" style="font-weight: 600; color: var(--text-secondary);">${sale.valor2 ? sale.valor2.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
                     <td>${getPaymentBadgeHTML(sale)}</td>
+                    <td>${sale.vencimentoBoleto ? new Date(sale.vencimentoBoleto + 'T12:00:00').toLocaleDateString('pt-BR') : '-'}</td>
+                    <td style="font-weight: 600;">${escapeHTML(sale.vendedorNome)}</td>
+                    <td>${escapeHTML(sale.observacoes2)}</td>
                 </tr>
             `).join('');
         }
@@ -439,19 +446,25 @@ function renderSalesTable() {
     document.getElementById('btn-page-next').disabled = salesPage === totalPages;
 
     if (pageSales.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-muted text-center" style="text-align: center;">Nenhuma venda encontrada.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="14" class="text-muted text-center" style="text-align: center;">Nenhuma venda encontrada.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = pageSales.map(sale => `
         <tr>
-            <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${escapeHTML(sale.id.replace('venda_', ''))}</td>
-            <td style="font-weight: 600;">${escapeHTML(sale.vendedorNome)}</td>
+            <td>${escapeHTML(sale.observacoes)}</td>
+            <td>${escapeHTML(sale.proposta)}</td>
             <td>${escapeHTML(sale.cliente)}</td>
-            <td><span class="badge badge-primary">NF: ${escapeHTML(sale.numeroNota)}</span></td>
+            <td>${escapeHTML(sale.tipo)}</td>
             <td class="money-cell" style="font-weight: 700; color: var(--success);">${sale.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-            <td>${new Date(sale.data).toLocaleDateString('pt-BR')} ${new Date(sale.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+            <td>${new Date(sale.data).toLocaleDateString('pt-BR')}</td>
+            <td>${escapeHTML(sale.executante)}</td>
+            <td><span class="badge badge-primary">${escapeHTML(sale.numeroNota)}</span></td>
+            <td class="money-cell" style="font-weight: 600; color: var(--text-secondary);">${sale.valor2 ? sale.valor2.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
             <td>${getPaymentBadgeHTML(sale)}</td>
+            <td>${sale.vencimentoBoleto ? new Date(sale.vencimentoBoleto + 'T12:00:00').toLocaleDateString('pt-BR') : '-'}</td>
+            <td style="font-weight: 600;">${escapeHTML(sale.vendedorNome)}</td>
+            <td>${escapeHTML(sale.observacoes2)}</td>
             <td class="actions-column">
                 <div class="actions-cell-wrapper">
                     ${sale.formaPagamento === 'Boleto' && sale.status === 'Pendente' ? `
@@ -743,7 +756,7 @@ export function bindUIEvents() {
     // Mostrar/ocultar data de vencimento e quantidade se pagamento for Boleto
     const selectPagamento = document.getElementById('sale-pagamento');
     const groupBoleto = document.getElementById('group-boleto-container');
-    const inputVencimento = document.getElementById('sale-vencimento-boleto');
+    const inputVencimento = document.getElementById('sale-vencimento');
     const inputQuantidade = document.getElementById('sale-quantidade-boleto');
     const inputValor = document.getElementById('sale-valor');
     const previewContainer = document.getElementById('boleto-division-preview');
@@ -799,16 +812,25 @@ export function bindUIEvents() {
         e.preventDefault();
         const vendedorId = document.getElementById('sale-vendedor').value;
         const cliente = document.getElementById('sale-cliente').value.trim();
+        const tipo = document.getElementById('sale-tipo').value.trim() || 'Venda';
+        const proposta = document.getElementById('sale-proposta').value.trim();
+        const executante = document.getElementById('sale-executante').value.trim();
         const nota = document.getElementById('sale-nota').value.trim();
         const valor = document.getElementById('sale-valor').value;
+        const valor2Val = document.getElementById('sale-valor2').value;
+        const valor2 = valor2Val ? parseFloat(valor2Val) : null;
         const dataVal = document.getElementById('sale-data').value;
         const pagamento = document.getElementById('sale-pagamento').value;
-        const obs = document.getElementById('sale-obs').value.trim();
-        const vencimento = document.getElementById('sale-vencimento-boleto').value;
+        const vencimento = document.getElementById('sale-vencimento').value;
         const quantidade = document.getElementById('sale-quantidade-boleto').value;
+        const obs = document.getElementById('sale-obs').value.trim();
+        const obs2 = document.getElementById('sale-obs2').value.trim();
 
         try {
-            const newSale = addSale(vendedorId, cliente, nota, valor, dataVal, pagamento, obs, vencimento, quantidade);
+            const newSale = addSale(
+                vendedorId, cliente, nota, valor, dataVal, pagamento, obs,
+                vencimento, quantidade, proposta, tipo, executante, valor2, obs2
+            );
             if (newSale) {
                 showToast('Venda Registrada', `A venda de Nota Fiscal Nº ${nota} no valor de R$ ${parseFloat(valor).toFixed(2)} foi inserida.`, 'success');
                 
@@ -821,6 +843,9 @@ export function bindUIEvents() {
                 inputVencimento?.removeAttribute('required');
                 inputQuantidade?.removeAttribute('required');
                 if (previewContainer) previewContainer.style.display = 'none';
+                
+                // Redefine valor padrão para o tipo
+                document.getElementById('sale-tipo').value = 'Venda';
                 
                 const now = new Date();
                 const offset = now.getTimezoneOffset() * 60000;

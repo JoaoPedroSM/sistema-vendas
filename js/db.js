@@ -186,11 +186,17 @@ export function getSales() {
                 sale.boletosPagos = (sale.status === 'Pago') ? sale.quantidadeBoletos : 0;
             }
         }
+        // Novas propriedades com defaults para retrocompatibilidade
+        if (sale.proposta === undefined) sale.proposta = '';
+        if (sale.tipo === undefined) sale.tipo = 'Venda';
+        if (sale.executante === undefined) sale.executante = '';
+        if (sale.valor2 === undefined) sale.valor2 = null;
+        if (sale.observacoes2 === undefined) sale.observacoes2 = '';
     });
     return [...currentDatabase.sales];
 }
 
-export function addSale(vendedorId, cliente, numeroNota, valor, dataStr, formaPagamento, observacoes, vencimentoBoleto = null, quantidadeBoletos = 1) {
+export function addSale(vendedorId, cliente, numeroNota, valor, dataStr, formaPagamento, observacoes, vencimentoBoleto = null, quantidadeBoletos = 1, proposta = '', tipo = 'Venda', executante = '', valor2 = null, observacoes2 = '') {
     if (!currentDatabase) return null;
 
     const vendedor = currentDatabase.sellers.find(s => s.id === vendedorId);
@@ -205,11 +211,16 @@ export function addSale(vendedorId, cliente, numeroNota, valor, dataStr, formaPa
         valor: parseFloat(valor),
         data: new Date(dataStr).toISOString(),
         formaPagamento,
-        vencimentoBoleto: formaPagamento === 'Boleto' ? vencimentoBoleto : null,
+        vencimentoBoleto: vencimentoBoleto || null,
         quantidadeBoletos: formaPagamento === 'Boleto' ? parseInt(quantidadeBoletos) : null,
         boletosPagos: formaPagamento === 'Boleto' ? 0 : null,
         status: formaPagamento === 'Boleto' ? 'Pendente' : 'Pago',
-        observacoes: observacoes || ''
+        observacoes: observacoes || '',
+        proposta: proposta || '',
+        tipo: tipo || 'Venda',
+        executante: executante || '',
+        valor2: valor2 ? parseFloat(valor2) : null,
+        observacoes2: observacoes2 || ''
     };
 
     currentDatabase.sales.push(newSale);

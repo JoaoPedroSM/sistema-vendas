@@ -38,42 +38,55 @@ export function exportToExcel(sales) {
         throw new Error('Não há dados de vendas para exportar.');
     }
 
-    // Cabeçalhos das colunas
+    // Cabeçalhos das colunas exatamente igual à imagem do usuário
     const headers = [
-        'ID da Venda',
-        'Vendedor',
+        'Observações',
+        'Proposta',
         'Cliente',
-        'Número da Nota',
-        'Valor (R$)',
+        'Tipo',
+        'Valor',
         'Data',
-        'Hora',
-        'Forma de Pagamento',
-        'Observações'
+        'Executante',
+        'Venda (NF)',
+        'Valor2',
+        'Pagamento',
+        'Vencimento',
+        'Vendedor',
+        'Observações (2)'
     ];
 
     // Mapeamento dos registros de vendas
     const rows = sales.map(sale => {
         const dateObj = new Date(sale.data);
         const dateStr = dateObj.toLocaleDateString('pt-BR');
-        const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         
         // Limpar observações de quebras de linha ou aspas duplas
         const obsEscaped = (sale.observacoes || '')
             .replace(/"/g, '""')
             .replace(/\n/g, ' ');
 
+        const obs2Escaped = (sale.observacoes2 || '')
+            .replace(/"/g, '""')
+            .replace(/\n/g, ' ');
+
+        const vencimentoStr = sale.vencimentoBoleto
+            ? new Date(sale.vencimentoBoleto + 'T12:00:00').toLocaleDateString('pt-BR')
+            : '';
+
         return [
-            sale.id,
-            sale.vendedorNome,
-            sale.cliente.replace(/"/g, '""'),
-            (sale.numeroNota || '').replace(/"/g, '""'),
-            sale.valor.toFixed(2).replace('.', ','), // Formato decimal em português para Excel
+            `"${obsEscaped}"`,
+            `"${(sale.proposta || '').replace(/"/g, '""')}"`,
+            `"${sale.cliente.replace(/"/g, '""')}"`,
+            `"${(sale.tipo || 'Venda').replace(/"/g, '""')}"`,
+            sale.valor.toFixed(2).replace('.', ','),
             dateStr,
-            timeStr,
-            sale.formaPagamento === 'Boleto' && sale.vencimentoBoleto 
-                ? `Boleto (${sale.quantidadeBoletos && sale.quantidadeBoletos > 1 ? sale.quantidadeBoletos + ' blt - ' : ''}Venc: ${sale.vencimentoBoleto.split('-').reverse().join('/')})` 
-                : sale.formaPagamento,
-            `"${obsEscaped}"`
+            `"${(sale.executante || '').replace(/"/g, '""')}"`,
+            `"${(sale.numeroNota || '').replace(/"/g, '""')}"`,
+            sale.valor2 !== null && sale.valor2 !== undefined ? sale.valor2.toFixed(2).replace('.', ',') : '',
+            `"${sale.formaPagamento}"`,
+            vencimentoStr,
+            `"${sale.vendedorNome}"`,
+            `"${obs2Escaped}"`
         ];
     });
 
