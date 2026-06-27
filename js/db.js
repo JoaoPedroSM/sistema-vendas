@@ -84,6 +84,12 @@ export function loadDatabase() {
         }
 
         currentDatabase = JSON.parse(decryptedStr);
+        if (!currentDatabase.proposals) {
+            currentDatabase.proposals = [];
+        }
+        if (!currentDatabase.paymentMethods) {
+            currentDatabase.paymentMethods = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
+        }
         return true;
     } catch (error) {
         console.error('Falha ao descriptografar banco de dados:', error);
@@ -102,7 +108,9 @@ function initializeNewDatabase() {
             { id: 'sel_pedro', name: 'Pedro', email: 'pedro@vendasmonitor.com', phone: '(21) 98333-4455', status: 'Ativo' },
             { id: 'sel_ana', name: 'Ana', email: 'ana@vendasmonitor.com', phone: '(11) 98444-5566', status: 'Ativo' }
         ],
-        sales: []
+        sales: [],
+        proposals: [],
+        paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto']
     };
 
     // Salva o banco inicial zerado
@@ -312,6 +320,8 @@ export function importBackup(encryptedJsonStr, testPassword) {
         if (!parsed.sellers || !parsed.sales) {
             return false;
         }
+        if (!parsed.proposals) parsed.proposals = [];
+        if (!parsed.paymentMethods) parsed.paymentMethods = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
 
         // Aplica ao localStorage e atualiza em memória
         localStorage.setItem(STORAGE_KEY_DB, encryptedJsonStr);
@@ -324,4 +334,196 @@ export function importBackup(encryptedJsonStr, testPassword) {
         console.error('Falha ao restaurar backup:', e);
         return false;
     }
+}
+
+/**
+ * Retorna as propostas
+ */
+export function getProposals() {
+    if (!currentDatabase) return [];
+    if (!currentDatabase.proposals) {
+        currentDatabase.proposals = [];
+    }
+    // Preenche defaults para retrocompatibilidade
+    currentDatabase.proposals.forEach(prop => {
+        if (prop.valor2 === undefined) prop.valor2 = null;
+        if (prop.executante === undefined) prop.executante = '';
+        if (prop.formaPagamento === undefined) prop.formaPagamento = '';
+        if (prop.observacoes2 === undefined) prop.observacoes2 = '';
+    });
+    return [...currentDatabase.proposals];
+}
+
+/**
+ * Adiciona uma proposta
+ */
+export function addProposal(vendedorId, cliente, valor, dataStr, formaPagamento, observacoes, propostaCodigo = '', tipo = 'Proposta', executante = '', valor2 = null, observacoes2 = '') {
+    if (!currentDatabase) return null;
+    if (!currentDatabase.proposals) currentDatabase.proposals = [];
+
+    const vendedor = currentDatabase.sellers.find(s => s.id === vendedorId);
+    if (!vendedor) throw new Error('Vendedor não encontrado.');
+
+    const timestamp = Date.now();
+    const finalCodigo = propostaCodigo.trim() || 'PROP-' + timestamp;
+
+    const newProposal = {
+        id: 'prop_' + timestamp,
+        vendedorId,
+        vendedorNome: vendedor.name,
+        cliente,
+        valor: parseFloat(valor),
+        data: new Date(dataStr).toISOString(),
+        formaPagamento: formaPagamento || '',
+        observacoes: observacoes || '',
+        proposta: finalCodigo,
+        tipo: tipo || 'Proposta',
+        executante: executante || '',
+        valor2: valor2 ? parseFloat(valor2) : null,
+        observacoes2: observacoes2 || ''
+    };
+
+    currentDatabase.proposals.push(newProposal);
+    currentDatabase.proposals.sort((a, b) => new Date(b.data) - new Date(a.data));
+    
+    saveDatabase();
+    return newProposal;
+}
+
+/**
+ * Atualiza uma proposta existente
+ */
+export function updateProposal(id, vendedorId, cliente, valor, dataStr, formaPagamento, observacoes, propostaCodigo = '', tipo = 'Proposta', executante = '', valor2 = null, observacoes2 = '') {
+    if (!currentDatabase || !currentDatabase.proposals) return false;
+
+    const idx = currentDatabase.proposals.findIndex(p => p.id === id);
+    if (idx === -1) return false;
+
+    const vendedor = currentDatabase.sellers.find(s => s.id === vendedorId);
+    if (!vendedor) throw new Error('Vendedor não encontrado.');
+
+    const finalCodigo = propostaCodigo.trim() || 'PROP-' + Date.now();
+
+    currentDatabase.proposals[idx] = {
+        id,
+        vendedorId,
+        vendedorNome: vendedor.name,
+        cliente,
+        valor: parseFloat(valor),
+        data: new Date(dataStr).toISOString(),
+        formaPagamento: formaPagamento || '',
+        observacoes: observacoes || '',
+        proposta: finalCodigo,
+        tipo: tipo || 'Proposta',
+        executante: executante || '',
+        valor2: valor2 ? parseFloat(valor2) : null,
+        observacoes2: observacoes2 || ''
+    };
+
+    currentDatabase.proposals.sort((a, b) => new Date(b.data) - new Date(a.data));
+    saveDatabase();
+    return true;
+}
+
+/**
+ * Exclui uma proposta pelo ID
+ */
+export function deleteProposal(id) {
+    if (!currentDatabase || !currentDatabase.proposals) return false;
+
+    const lengthBefore = currentDatabase.proposals.length;
+    currentDatabase.proposals = currentDatabase.proposals.filter(p => p.id !== id);
+
+    if (currentDatabase.proposals.length < lengthBefore) {
+        saveDatabase();
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Converte proposta em venda
+ */
+export function convertProposalToSale(proposalId, saleNota, finalPagamento, quantidadeBoletos = 1, vencimentoBoleto = null) {
+    if (!currentDatabase) return null;
+    if (!currentDatabase.proposals) currentDatabase.proposals = [];
+
+    const proposal = currentDatabase.proposals.find(p => p.id === proposalId);
+    if (!proposal) throw new Error('Proposta não encontrada.');
+
+    // Adiciona a venda usando os dados da proposta + dados finais da venda
+    const newSale = {
+        id: 'venda_' + Date.now(),
+        vendedorId: proposal.vendedorId,
+        vendedorNome: proposal.vendedorNome,
+        cliente: proposal.cliente,
+        numeroNota: saleNota,
+        valor: proposal.valor,
+        data: new Date().toISOString(), // Data de hoje como data da venda
+        formaPagamento: finalPagamento,
+        vencimentoBoleto: vencimentoBoleto || null,
+        quantidadeBoletos: finalPagamento === 'Boleto' ? parseInt(quantidadeBoletos) : null,
+        boletosPagos: finalPagamento === 'Boleto' ? 0 : null,
+        status: finalPagamento === 'Boleto' ? 'Pendente' : 'Pago',
+        observacoes: proposal.observacoes || '',
+        proposta: proposal.proposta,
+        tipo: 'Venda', // Ao converter, vira tipo "Venda"
+        executante: proposal.executante || '',
+        valor2: proposal.valor2,
+        observacoes2: proposal.observacoes2 || ''
+    };
+
+    if (!currentDatabase.sales) currentDatabase.sales = [];
+    currentDatabase.sales.push(newSale);
+    currentDatabase.sales.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    // Remove a proposta convertida
+    currentDatabase.proposals = currentDatabase.proposals.filter(p => p.id !== proposalId);
+
+    saveDatabase();
+    return newSale;
+}
+
+/**
+ * Retorna as formas de pagamento
+ */
+export function getPaymentMethods() {
+    if (!currentDatabase) return ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
+    if (!currentDatabase.paymentMethods) {
+        currentDatabase.paymentMethods = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
+        saveDatabase();
+    }
+    return [...currentDatabase.paymentMethods];
+}
+
+/**
+ * Adiciona uma nova forma de pagamento
+ */
+export function addPaymentMethod(name) {
+    if (!currentDatabase) return false;
+    if (!currentDatabase.paymentMethods) {
+        currentDatabase.paymentMethods = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
+    }
+    const cleanName = name.trim();
+    if (!cleanName) return false;
+    if (currentDatabase.paymentMethods.some(m => m.toLowerCase() === cleanName.toLowerCase())) {
+        return false; // Já existe
+    }
+    currentDatabase.paymentMethods.push(cleanName);
+    saveDatabase();
+    return true;
+}
+
+/**
+ * Remove uma forma de pagamento
+ */
+export function deletePaymentMethod(name) {
+    if (!currentDatabase || !currentDatabase.paymentMethods) return false;
+    const lengthBefore = currentDatabase.paymentMethods.length;
+    currentDatabase.paymentMethods = currentDatabase.paymentMethods.filter(m => m !== name);
+    if (currentDatabase.paymentMethods.length < lengthBefore) {
+        saveDatabase();
+        return true;
+    }
+    return false;
 }

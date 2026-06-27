@@ -8,7 +8,9 @@
 import { 
     getSellers, addSeller, updateSeller, deleteSeller,
     getSales, addSale, deleteSale, payNextBoleto,
-    clearDatabase, exportBackup, importBackup 
+    clearDatabase, exportBackup, importBackup,
+    getProposals, addProposal, updateProposal, deleteProposal, convertProposalToSale,
+    getPaymentMethods, addPaymentMethod, deletePaymentMethod
 } from './db.js';
 import { updateCharts } from './charts.js';
 import { getConsolidatedSellersMetrics, exportToExcel, exportToPDF } from './reports.js';
@@ -41,6 +43,10 @@ let activeView = 'dashboard';
 let salesPage = 1;
 const salesPageSize = 10;
 let filteredSalesList = [];
+
+let proposalsPage = 1;
+const proposalsPageSize = 10;
+let filteredProposalsList = [];
 
 // Elementos gerais
 let activeModalConfirmCallback = null;
@@ -182,6 +188,7 @@ export function navigateTo(viewId) {
         const titleMap = {
             'dashboard': 'Dashboard de Vendas',
             'vendas': 'Lançamento e Histórico de Vendas',
+            'propostas': 'Lançamento e Histórico de Propostas',
             'vendedores': 'Gerenciamento de Vendedores',
             'relatorios': 'Exportação de Relatórios e Backup'
         };
@@ -203,6 +210,8 @@ export function navigateTo(viewId) {
             refreshDashboard();
         } else if (viewId === 'vendas') {
             refreshSalesPage();
+        } else if (viewId === 'propostas') {
+            refreshProposalsPage();
         } else if (viewId === 'vendedores') {
             refreshSellersPage();
         } else if (viewId === 'relatorios') {
@@ -370,6 +379,18 @@ function refreshSalesPage() {
         selectFilter.value = currentVal;
     }
 
+    // Atualiza dropdown de formas de pagamento
+    const selectPagamento = document.getElementById('sale-pagamento');
+    if (selectPagamento) {
+        const currentVal = selectPagamento.value;
+        const methods = getPaymentMethods();
+        selectPagamento.innerHTML = '<option value="" disabled selected>Selecione o pagamento</option>' +
+            methods.map(m => `<option value="${m}">${escapeHTML(m)}</option>`).join('');
+        if (currentVal && methods.includes(currentVal)) {
+            selectPagamento.value = currentVal;
+        }
+    }
+
     // Configura data padrão do form de venda como data/hora atual local (para atender RF06)
     const saleDateInput = document.getElementById('sale-data');
     if (saleDateInput && !saleDateInput.value) {
@@ -380,6 +401,7 @@ function refreshSalesPage() {
         saleDateInput.value = localISOTime;
     }
 
+    updateAutocompletes();
     applySalesFilters();
 }
 
@@ -695,6 +717,8 @@ function refreshReportsPage() {
             <td class="money-cell" style="color: var(--info); font-weight: 600;">${item.averageTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         </tr>
     `).join('');
+
+    refreshPaymentMethodsList();
 }
 
 /**
@@ -1091,4 +1115,595 @@ export function bindUIEvents() {
             }
         }
     });
+
+    // --- FORM DE PROPOSTAS ---
+    const proposalForm = document.getElementById('proposal-form');
+    proposalForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const idEdit = document.getElementById('proposal-id-edit')?.value || '';
+        const vendedorId = document.getElementById('proposal-vendedor')?.value || '';
+        const cliente = document.getElementById('proposal-cliente')?.value.trim() || '';
+        const tipo = document.getElementById('proposal-tipo')?.value.trim() || 'Proposta';
+        const codigo = document.getElementById('proposal-codigo')?.value.trim() || '';
+        const executante = document.getElementById('proposal-executante')?.value.trim() || '';
+        const valor = document.getElementById('proposal-valor')?.value || '0';
+        const valor2Val = document.getElementById('proposal-valor2')?.value || '';
+        const valor2 = valor2Val ? parseFloat(valor2Val) : null;
+        const dataVal = document.getElementById('proposal-data')?.value || '';
+        const pagamento = document.getElementById('proposal-pagamento')?.value || '';
+        const obs = document.getElementById('proposal-obs')?.value.trim() || '';
+        const obs2 = document.getElementById('proposal-obs2')?.value.trim() || '';
+
+        try {
+            if (idEdit) {
+                // Edição
+                if (updateProposal(
+                    idEdit, vendedorId, cliente, valor, dataVal, pagamento, obs,
+                    codigo, tipo, executante, valor2, obs2
+                )) {
+                    showToast('Proposta Atualizada', 'Os dados da proposta foram atualizados com sucesso.', 'success');
+                    resetProposalForm();
+                    refreshProposalsPage();
+                } else {
+                    showToast('Erro', 'Não foi possível atualizar a proposta.', 'danger');
+                }
+            } else {
+                // Nova proposta
+                const newProp = addProposal(
+                    vendedorId, cliente, valor, dataVal, pagamento, obs,
+                    codigo, tipo, executante, valor2, obs2
+                );
+                if (newProp) {
+                    showToast('Proposta Cadastrada', `Proposta ${newProp.proposta} registrada com sucesso.`, 'success');
+                    resetProposalForm();
+                    refreshProposalsPage();
+                }
+            }
+        } catch (error) {
+            showToast('Erro na Operação', error.message, 'danger');
+        }
+    });
+
+    // Cancelar Edição de Proposta
+    document.getElementById('btn-cancel-edit-proposal')?.addEventListener('click', resetProposalForm);
+
+    // --- FILTROS DE HISTÓRICO DE PROPOSTAS ---
+    document.getElementById('filter-proposal-search-input')?.addEventListener('input', () => {
+        proposalsPage = 1;
+        applyProposalsFilters();
+    });
+    
+    document.getElementById('filter-proposal-vendedor')?.addEventListener('change', () => {
+        proposalsPage = 1;
+        applyProposalsFilters();
+    });
+    
+    document.getElementById('filter-proposal-data-inicio')?.addEventListener('change', () => {
+        proposalsPage = 1;
+        applyProposalsFilters();
+    });
+    
+    document.getElementById('filter-proposal-data-fim')?.addEventListener('change', () => {
+        proposalsPage = 1;
+        applyProposalsFilters();
+    });
+
+    // Botão Limpar Filtros de Propostas
+    document.getElementById('btn-limpar-proposal-filtros')?.addEventListener('click', () => {
+        const fSearch = document.getElementById('filter-proposal-search-input');
+        if (fSearch) fSearch.value = '';
+        
+        const fVendedor = document.getElementById('filter-proposal-vendedor');
+        if (fVendedor) fVendedor.value = 'todos';
+        
+        const fDataInicio = document.getElementById('filter-proposal-data-inicio');
+        if (fDataInicio) fDataInicio.value = '';
+        
+        const fDataFim = document.getElementById('filter-proposal-data-fim');
+        if (fDataFim) fDataFim.value = '';
+        
+        proposalsPage = 1;
+        applyProposalsFilters();
+        showToast('Filtros Limpos', 'A listagem está mostrando todas as propostas.', 'info');
+    });
+
+    // --- PAGINAÇÃO DE PROPOSTAS ---
+    document.getElementById('btn-proposal-page-prev')?.addEventListener('click', () => {
+        if (proposalsPage > 1) {
+            proposalsPage--;
+            renderProposalsTable();
+        }
+    });
+
+    document.getElementById('btn-proposal-page-next')?.addEventListener('click', () => {
+        const totalRecords = filteredProposalsList.length;
+        const totalPages = Math.ceil(totalRecords / proposalsPageSize);
+        if (proposalsPage < totalPages) {
+            proposalsPage++;
+            renderProposalsTable();
+        }
+    });
+
+    // --- EVENTOS DO MODAL DE CONVERSÃO DE PROPOSTA ---
+    document.getElementById('btn-convert-cancel')?.addEventListener('click', closeConvertProposalModal);
+    
+    const convertProposalForm = document.getElementById('convert-proposal-form');
+    convertProposalForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const proposalId = document.getElementById('convert-proposal-id').value;
+        const saleNota = document.getElementById('convert-sale-nota').value.trim();
+        const finalPagamento = document.getElementById('convert-sale-pagamento').value;
+        const quantidadeBoletos = document.getElementById('convert-sale-quantidade-boleto')?.value || '1';
+        const vencimentoBoleto = document.getElementById('convert-sale-vencimento')?.value || '';
+
+        try {
+            const newSale = convertProposalToSale(
+                proposalId, saleNota, finalPagamento, quantidadeBoletos, vencimentoBoleto
+            );
+            if (newSale) {
+                showToast('Conversão Concluída', `A proposta foi convertida em Venda com sucesso! NF: ${saleNota}`, 'success');
+                closeConvertProposalModal();
+                refreshProposalsPage();
+                refreshSalesPage();
+                navigateTo('vendas'); // Navega para vendas para ver o resultado
+            }
+        } catch (error) {
+            showToast('Erro na Conversão', error.message, 'danger');
+        }
+    });
+
+    // --- FORM DE ADICIONAR FORMA DE PAGAMENTO ---
+    const addPaymentForm = document.getElementById('add-payment-method-form');
+    addPaymentForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('new-payment-method-input');
+        const name = input?.value.trim() || '';
+        
+        if (name) {
+            if (addPaymentMethod(name)) {
+                showToast('Sucesso', `Forma de pagamento "${name}" adicionada.`, 'success');
+                input.value = '';
+                refreshPaymentMethodsList();
+                // Atualiza dropdowns abertos
+                refreshSalesPage();
+                refreshProposalsPage();
+            } else {
+                showToast('Aviso', 'Forma de pagamento já cadastrada ou inválida.', 'warning');
+            }
+        }
+    });
+}
+
+/**
+ * Atualiza a tela de Propostas (Lista, Filtros, Formulário)
+ */
+export function refreshProposalsPage() {
+    const sellers = getSellers();
+    
+    // Atualiza dropdowns de vendedores (Cadastro de Propostas e Filtro de Propostas)
+    const selectForm = document.getElementById('proposal-vendedor');
+    const selectFilter = document.getElementById('filter-proposal-vendedor');
+    
+    if (selectForm) {
+        selectForm.innerHTML = '<option value="" disabled selected>Selecione o vendedor</option>' + 
+            sellers.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
+    }
+
+    if (selectFilter) {
+        const currentVal = selectFilter.value || 'todos';
+        selectFilter.innerHTML = '<option value="todos">Todos Vendedores</option>' +
+            sellers.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
+        selectFilter.value = currentVal;
+    }
+
+    // Atualiza dropdown de formas de pagamento sugeridas
+    const selectPagamento = document.getElementById('proposal-pagamento');
+    if (selectPagamento) {
+        const currentVal = selectPagamento.value;
+        const methods = getPaymentMethods();
+        selectPagamento.innerHTML = '<option value="" disabled selected>Selecione o pagamento</option>' +
+            methods.map(m => `<option value="${m}">${escapeHTML(m)}</option>`).join('');
+        if (currentVal && methods.includes(currentVal)) {
+            selectPagamento.value = currentVal;
+        }
+    }
+
+    // Configura data padrão do form de proposta como data/hora atual local
+    const proposalDateInput = document.getElementById('proposal-data');
+    if (proposalDateInput && !proposalDateInput.value) {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+        proposalDateInput.value = localISOTime;
+    }
+
+    updateAutocompletes();
+    applyProposalsFilters();
+}
+
+/**
+ * Aplica os filtros de propostas ativos e atualiza a tabela
+ */
+function applyProposalsFilters() {
+    const proposals = getProposals();
+    const searchVal = (document.getElementById('filter-proposal-search-input')?.value || '').toLowerCase().trim();
+    const sellerVal = document.getElementById('filter-proposal-vendedor')?.value || 'todos';
+    const startVal = document.getElementById('filter-proposal-data-inicio')?.value || '';
+    const endVal = document.getElementById('filter-proposal-data-fim')?.value || '';
+
+    filteredProposalsList = proposals.filter(prop => {
+        // Busca por cliente ou código da proposta
+        const matchSearch = prop.cliente.toLowerCase().includes(searchVal) || 
+                            (prop.proposta && prop.proposta.toLowerCase().includes(searchVal));
+        
+        // Filtro por Vendedor
+        const matchSeller = sellerVal === 'todos' || prop.vendedorId === sellerVal;
+        
+        // Filtro por Período
+        let matchDate = true;
+        const propDate = new Date(prop.data);
+        propDate.setHours(0, 0, 0, 0);
+
+        if (startVal) {
+            const startDate = new Date(startVal);
+            startDate.setHours(0,0,0,0);
+            if (propDate < startDate) matchDate = false;
+        }
+
+        if (endVal) {
+            const endDate = new Date(endVal);
+            endDate.setHours(0,0,0,0);
+            if (propDate > endDate) matchDate = false;
+        }
+
+        return matchSearch && matchSeller && matchDate;
+    });
+
+    renderProposalsTable();
+}
+
+/**
+ * Renderiza a tabela de propostas com base na paginação
+ */
+function renderProposalsTable() {
+    const tbody = document.getElementById('proposals-history-tbody');
+    if (!tbody) return;
+
+    const totalRecords = filteredProposalsList.length;
+    const totalPages = Math.max(1, Math.ceil(totalRecords / proposalsPageSize));
+
+    if (proposalsPage > totalPages) proposalsPage = totalPages;
+    if (proposalsPage < 1) proposalsPage = 1;
+
+    const startIndex = (proposalsPage - 1) * proposalsPageSize;
+    const pageProposals = filteredProposalsList.slice(startIndex, startIndex + proposalsPageSize);
+
+    const countEl = document.getElementById('table-proposals-count');
+    if (countEl) {
+        countEl.textContent = totalRecords > 0 
+            ? `Mostrando ${startIndex + 1} a ${Math.min(startIndex + proposalsPageSize, totalRecords)} de ${totalRecords} propostas`
+            : `Nenhuma proposta encontrada`;
+    }
+    const pageEl = document.getElementById('table-proposal-page-number');
+    if (pageEl) pageEl.textContent = proposalsPage;
+    const btnPrev = document.getElementById('btn-proposal-page-prev');
+    if (btnPrev) btnPrev.disabled = proposalsPage === 1;
+    const btnNext = document.getElementById('btn-proposal-page-next');
+    if (btnNext) btnNext.disabled = proposalsPage === totalPages;
+
+    if (pageProposals.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="text-muted text-center" style="text-align: center;">Nenhuma proposta encontrada.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = pageProposals.map(prop => `
+        <tr>
+            <td>${escapeHTML(prop.observacoes)}</td>
+            <td><span class="badge badge-primary">${escapeHTML(prop.proposta)}</span></td>
+            <td>${escapeHTML(prop.cliente)}</td>
+            <td>${escapeHTML(prop.tipo)}</td>
+            <td class="money-cell" style="font-weight: 700; color: var(--success);">${prop.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td>${new Date(prop.data).toLocaleDateString('pt-BR')}</td>
+            <td>${escapeHTML(prop.executante)}</td>
+            <td class="money-cell" style="font-weight: 600; color: var(--text-secondary);">${prop.valor2 ? prop.valor2.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
+            <td><span class="badge badge-secondary">${escapeHTML(prop.formaPagamento) || '-'}</span></td>
+            <td style="font-weight: 600;">${escapeHTML(prop.vendedorNome)}</td>
+            <td>${escapeHTML(prop.observacoes2)}</td>
+            <td class="actions-column">
+                <div class="actions-cell-wrapper">
+                    <button class="action-btn btn-convert-proposal" data-id="${prop.id}" title="Converter em Venda">
+                        <i data-lucide="shopping-cart"></i>
+                    </button>
+                    <button class="action-btn action-btn-primary btn-edit-proposal" data-id="${prop.id}" title="Editar Proposta">
+                        <i data-lucide="edit-3"></i>
+                    </button>
+                    <button class="action-btn action-btn-danger btn-delete-proposal" data-id="${prop.id}" title="Excluir Proposta">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+    lucide.createIcons();
+
+    // Eventos de Ações na Tabela de Propostas
+    tbody.querySelectorAll('.btn-delete-proposal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            openConfirmModal(
+                'Confirmar Exclusão',
+                `Tem certeza que deseja excluir a proposta de ID ${id.replace('prop_', '')}? Esta ação é definitiva.`,
+                () => {
+                    if (deleteProposal(id)) {
+                        showToast('Proposta Excluída', 'O registro foi removido com sucesso.', 'success');
+                        refreshProposalsPage();
+                    } else {
+                        showToast('Erro', 'Não foi possível excluir o registro.', 'danger');
+                    }
+                }
+            );
+        });
+    });
+
+    tbody.querySelectorAll('.btn-edit-proposal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            const proposals = getProposals();
+            const prop = proposals.find(p => p.id === id);
+            if (prop) {
+                document.getElementById('proposal-id-edit').value = prop.id;
+                document.getElementById('proposal-vendedor').value = prop.vendedorId;
+                document.getElementById('proposal-cliente').value = prop.cliente;
+                document.getElementById('proposal-tipo').value = prop.tipo;
+                document.getElementById('proposal-codigo').value = prop.proposta;
+                document.getElementById('proposal-executante').value = prop.executante;
+                document.getElementById('proposal-valor').value = prop.valor;
+                document.getElementById('proposal-valor2').value = prop.valor2 || '';
+                
+                // Formata data ISO para datetime-local input
+                const offset = new Date(prop.data).getTimezoneOffset() * 60000;
+                document.getElementById('proposal-data').value = new Date(new Date(prop.data) - offset).toISOString().slice(0, 16);
+                
+                document.getElementById('proposal-pagamento').value = prop.formaPagamento || '';
+                document.getElementById('proposal-obs').value = prop.observacoes;
+                document.getElementById('proposal-obs2').value = prop.observacoes2;
+
+                document.getElementById('title-form-proposta').textContent = 'Editar Proposta';
+                document.getElementById('btn-proposal-submit-text').textContent = 'Salvar Alterações';
+                document.getElementById('btn-cancel-edit-proposal').classList.remove('hidden');
+
+                showToast('Modo de Edição', 'Editando dados da proposta.', 'info');
+            }
+        });
+    });
+
+    tbody.querySelectorAll('.btn-convert-proposal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            const proposals = getProposals();
+            const prop = proposals.find(p => p.id === id);
+            if (prop) {
+                openConvertProposalModal(prop);
+            }
+        });
+    });
+}
+
+function resetProposalForm() {
+    const form = document.getElementById('proposal-form');
+    if (form) form.reset();
+    
+    const idEdit = document.getElementById('proposal-id-edit');
+    if (idEdit) idEdit.value = '';
+    
+    document.getElementById('title-form-proposta').textContent = 'Registrar Nova Proposta';
+    document.getElementById('btn-proposal-submit-text').textContent = 'Salvar Proposta';
+    document.getElementById('btn-cancel-edit-proposal').classList.add('hidden');
+    
+    // Reseta data padrão
+    const proposalDateInput = document.getElementById('proposal-data');
+    if (proposalDateInput) {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        proposalDateInput.value = (new Date(now - offset)).toISOString().slice(0, 16);
+    }
+}
+
+/**
+ * Abre o modal de conversão de proposta em venda
+ */
+function openConvertProposalModal(proposal) {
+    const modal = document.getElementById('convert-proposal-modal');
+    if (!modal) return;
+
+    document.getElementById('convert-proposal-id').value = proposal.id;
+    document.getElementById('convert-proposal-client').textContent = proposal.cliente;
+    document.getElementById('convert-proposal-value').textContent = proposal.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    
+    // Reseta inputs do modal
+    const inputNota = document.getElementById('convert-sale-nota');
+    if (inputNota) {
+        inputNota.value = '';
+    }
+
+    // Popula seletores de pagamento no modal
+    const selectPagamento = document.getElementById('convert-sale-pagamento');
+    if (selectPagamento) {
+        const methods = getPaymentMethods();
+        selectPagamento.innerHTML = '<option value="" disabled selected>Selecione o pagamento</option>' +
+            methods.map(m => `<option value="${m}">${escapeHTML(m)}</option>`).join('');
+        // Prefila com a forma sugerida na proposta se houver
+        if (proposal.formaPagamento && methods.includes(proposal.formaPagamento)) {
+            selectPagamento.value = proposal.formaPagamento;
+        } else {
+            selectPagamento.value = '';
+        }
+    }
+
+    // Esconde boleto por padrão
+    const groupBoleto = document.getElementById('convert-group-boleto-container');
+    if (groupBoleto) groupBoleto.classList.add('hidden');
+
+    const inputVencimento = document.getElementById('convert-sale-vencimento');
+    if (inputVencimento) inputVencimento.removeAttribute('required');
+
+    const inputQuantidade = document.getElementById('convert-sale-quantidade-boleto');
+    if (inputQuantidade) {
+        inputQuantidade.removeAttribute('required');
+        inputQuantidade.value = '1';
+    }
+
+    const previewContainer = document.getElementById('convert-boleto-division-preview');
+    if (previewContainer) previewContainer.style.display = 'none';
+
+    // Dispara trigger de alteração de boleto no modal
+    triggerConvertBoletoDetails();
+
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function closeConvertProposalModal() {
+    const modal = document.getElementById('convert-proposal-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function triggerConvertBoletoDetails() {
+    const selectPagamento = document.getElementById('convert-sale-pagamento');
+    const groupBoleto = document.getElementById('convert-group-boleto-container');
+    const inputVencimento = document.getElementById('convert-sale-vencimento');
+    const inputQuantidade = document.getElementById('convert-sale-quantidade-boleto');
+    const previewContainer = document.getElementById('convert-boleto-division-preview');
+    const previewSpan = document.getElementById('convert-boleto-division-value');
+    
+    const updateConvertBoletoPreview = () => {
+        const valTotalStr = document.getElementById('convert-proposal-value').textContent;
+        const valTotal = parseFloat(valTotalStr.replace(/[^\d]/g, '')) / 100 || 0;
+        const qtdBoletos = parseInt(inputQuantidade?.value) || 1;
+        
+        if (qtdBoletos >= 1 && valTotal > 0) {
+            const valorCada = valTotal / qtdBoletos;
+            const formattedCada = valorCada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            if (previewContainer && previewSpan) {
+                previewSpan.textContent = `${qtdBoletos}x de ${formattedCada}`;
+                previewContainer.style.display = 'block';
+            }
+        } else {
+            if (previewContainer) previewContainer.style.display = 'none';
+        }
+    };
+
+    selectPagamento?.addEventListener('change', (e) => {
+        if (e.target.value === 'Boleto') {
+            groupBoleto?.classList.remove('hidden');
+            inputVencimento?.setAttribute('required', 'true');
+            inputQuantidade?.setAttribute('required', 'true');
+            
+            const d = new Date();
+            d.setDate(d.getDate() + 3);
+            if (inputVencimento) inputVencimento.value = d.toISOString().split('T')[0];
+            if (inputQuantidade) inputQuantidade.value = '1';
+        } else {
+            groupBoleto?.classList.add('hidden');
+            inputVencimento?.removeAttribute('required');
+            inputQuantidade?.removeAttribute('required');
+            if (inputVencimento) inputVencimento.value = '';
+            if (inputQuantidade) inputQuantidade.value = '1';
+        }
+        updateConvertBoletoPreview();
+    });
+
+    inputQuantidade?.addEventListener('input', updateConvertBoletoPreview);
+}
+
+/**
+ * Atualiza o painel de Gerenciamento de Formas de Pagamento na tela de relatórios
+ */
+function refreshPaymentMethodsList() {
+    const listEl = document.getElementById('payment-methods-list');
+    if (!listEl) return;
+
+    const methods = getPaymentMethods();
+    if (methods.length === 0) {
+        listEl.innerHTML = `<li class="text-muted text-center" style="padding: 10px; font-style: italic;">Nenhuma forma de pagamento registrada.</li>`;
+        return;
+    }
+
+    listEl.innerHTML = methods.map(method => `
+        <li class="payment-method-item" style="margin-bottom: 8px;">
+            <span>${escapeHTML(method)}</span>
+            <button type="button" class="btn-delete-payment-method" data-method="${escapeHTML(method)}" title="Excluir forma de pagamento">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+            </button>
+        </li>
+    `).join('');
+
+    lucide.createIcons();
+
+    // Eventos de exclusão de formas de pagamento
+    listEl.querySelectorAll('.btn-delete-payment-method').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const method = e.currentTarget.dataset.method;
+            // Evita deletar boleto pois tem lógica especial de parcelamento
+            if (method === 'Boleto') {
+                showToast('Ação Bloqueada', 'A forma de pagamento "Boleto" não pode ser removida pois possui integrações específicas de controle de vencimento no sistema.', 'warning');
+                return;
+            }
+
+            openConfirmModal(
+                'Remover Forma de Pagamento',
+                `Tem certeza que deseja remover a forma de pagamento "${method}"? Novos registros não poderão utilizá-la, mas dados históricos serão preservados.`,
+                () => {
+                    if (deletePaymentMethod(method)) {
+                        showToast('Sucesso', `Forma de pagamento "${method}" removida.`, 'success');
+                        refreshPaymentMethodsList();
+                        // Atualiza dropdowns abertos
+                        refreshSalesPage();
+                        refreshProposalsPage();
+                    } else {
+                        showToast('Erro', 'Não foi possível remover a forma de pagamento.', 'danger');
+                    }
+                }
+            );
+        });
+    });
+}
+
+/**
+ * Atualiza os datalists globais para autocompletar inputs
+ */
+function updateAutocompletes() {
+    const sales = getSales();
+    const proposals = getProposals();
+    const sellers = getSellers();
+
+    // 1. Clientes únicos
+    const clients = new Set();
+    sales.forEach(s => { if (s.cliente) clients.add(s.cliente); });
+    proposals.forEach(p => { if (p.cliente) clients.add(p.cliente); });
+    const dlClients = document.getElementById('clients-list');
+    if (dlClients) {
+        dlClients.innerHTML = Array.from(clients).map(c => `<option value="${escapeHTML(c)}">`).join('');
+    }
+
+    // 2. Executantes únicos (inclui vendedores ativos por padrão como sugestão)
+    const executants = new Set();
+    sellers.filter(s => s.status === 'Ativo').forEach(s => executants.add(s.name));
+    sales.forEach(s => { if (s.executante) executants.add(s.executante); });
+    proposals.forEach(p => { if (p.executante) executants.add(p.executante); });
+    const dlExecutants = document.getElementById('executants-list');
+    if (dlExecutants) {
+        dlExecutants.innerHTML = Array.from(executants).map(e => `<option value="${escapeHTML(e)}">`).join('');
+    }
+
+    // 3. Tipos únicos
+    const types = new Set(["Venda", "Serviço", "Orçamento", "Proposta"]);
+    sales.forEach(s => { if (s.tipo) types.add(s.tipo); });
+    proposals.forEach(p => { if (p.tipo) types.add(p.tipo); });
+    const dlTypes = document.getElementById('types-list');
+    if (dlTypes) {
+        dlTypes.innerHTML = Array.from(types).map(t => `<option value="${escapeHTML(t)}">`).join('');
+    }
 }

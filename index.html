@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- CSS Estilos -->
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 
     <!-- Bibliotecas Locais (Alta Disponibilidade & Offline) -->
     <!-- CryptoJS para Criptografia local -->
@@ -37,7 +37,7 @@
     </script>
 
     <!-- JS Módulos da SPA (defer + type="module") -->
-    <script type="module" src="js/app.js?v=3" defer></script>
+    <script type="module" src="js/app.js?v=4" defer></script>
 </head>
 <body class="dark-theme"> <!-- Tema escuro elegante por padrão -->
 
@@ -161,6 +161,12 @@
                             </a>
                         </li>
                         <li>
+                            <a href="#" class="nav-link" data-view="propostas">
+                                <i data-lucide="file-text"></i>
+                                <span>Propostas</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="#" class="nav-link" data-view="vendedores">
                                 <i data-lucide="users"></i>
                                 <span>Vendedores</span>
@@ -168,7 +174,7 @@
                         </li>
                         <li>
                             <a href="#" class="nav-link" data-view="relatorios">
-                                <i data-lucide="file-text"></i>
+                                <i data-lucide="bar-chart-2"></i>
                                 <span>Relatórios e Banco</span>
                             </a>
                         </li>
@@ -360,14 +366,14 @@
                                     <label for="sale-cliente">Cliente <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i data-lucide="user" class="input-icon"></i>
-                                        <input type="text" id="sale-cliente" placeholder="Nome do cliente" required>
+                                        <input type="text" id="sale-cliente" placeholder="Nome do cliente" required list="clients-list">
                                     </div>
                                 </div>
                                 <div class="input-group">
                                     <label for="sale-tipo">Tipo <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i data-lucide="tag" class="input-icon"></i>
-                                        <input type="text" id="sale-tipo" value="Venda" placeholder="Ex: Venda, Serviço, Orçamento" required>
+                                        <input type="text" id="sale-tipo" value="Venda" placeholder="Ex: Venda, Serviço, Orçamento" required list="types-list">
                                     </div>
                                 </div>
                                 <div class="input-group">
@@ -381,7 +387,7 @@
                                     <label for="sale-executante">Executante</label>
                                     <div class="input-wrapper">
                                         <i data-lucide="user-check" class="input-icon"></i>
-                                        <input type="text" id="sale-executante" placeholder="Quem executou a venda/serviço">
+                                        <input type="text" id="sale-executante" placeholder="Quem executou a venda/serviço" list="executants-list">
                                     </div>
                                 </div>
                                 <div class="input-group">
@@ -531,6 +537,175 @@
                                     <button class="btn btn-secondary btn-xs" id="btn-page-prev"><i data-lucide="chevron-left"></i></button>
                                     <span id="table-page-number">1</span>
                                     <button class="btn btn-secondary btn-xs" id="btn-page-next"><i data-lucide="chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2.5 TELA: PROPOSTAS (REGISTRO E HISTÓRICO) -->
+                <section id="view-propostas" class="app-view hidden">
+                    <div class="vendas-layout">
+                        <!-- Painel Lateral: Form de Registro -->
+                        <div class="dashboard-card form-panel">
+                            <div class="card-header">
+                                <h2 id="title-form-proposta">Registrar Nova Proposta</h2>
+                            </div>
+                            <form id="proposal-form" class="standard-form">
+                                <input type="hidden" id="proposal-id-edit">
+                                <div class="input-group">
+                                    <label for="proposal-vendedor">Vendedor <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="users" class="input-icon"></i>
+                                        <select id="proposal-vendedor" required>
+                                            <option value="" disabled selected>Selecione o vendedor</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-cliente">Cliente <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="user" class="input-icon"></i>
+                                        <input type="text" id="proposal-cliente" placeholder="Nome do cliente" required list="clients-list">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-tipo">Tipo <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="tag" class="input-icon"></i>
+                                        <input type="text" id="proposal-tipo" value="Proposta" placeholder="Ex: Proposta, Venda, Serviço" required list="types-list">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-codigo">Proposta <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="file-spreadsheet" class="input-icon"></i>
+                                        <input type="text" id="proposal-codigo" placeholder="Número ou código da proposta" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-executante">Executante</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="user-check" class="input-icon"></i>
+                                        <input type="text" id="proposal-executante" placeholder="Quem executará o serviço" list="executants-list">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-valor">Valor (R$) <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="dollar-sign" class="input-icon"></i>
+                                        <input type="number" id="proposal-valor" step="0.01" min="0.01" placeholder="0.00" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-valor2">Valor2 (R$)</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="dollar-sign" class="input-icon"></i>
+                                        <input type="number" id="proposal-valor2" step="0.01" min="0.00" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-data">Data <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="datetime-local" id="proposal-data" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-pagamento">Pagamento sugerido</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="credit-card" class="input-icon"></i>
+                                        <select id="proposal-pagamento">
+                                            <option value="" disabled selected>Selecione o pagamento</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-obs">Observações (Opcional)</label>
+                                    <textarea id="proposal-obs" rows="2" placeholder="Detalhes adicionais da proposta..."></textarea>
+                                </div>
+                                <div class="input-group">
+                                    <label for="proposal-obs2">Observações (2) (Opcional)</label>
+                                    <textarea id="proposal-obs2" rows="2" placeholder="Observações adicionais secundárias..."></textarea>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="submit" class="btn btn-primary" style="flex-grow: 1;">
+                                        <span id="btn-proposal-submit-text">Salvar Proposta</span>
+                                        <i data-lucide="check-circle"></i>
+                                    </button>
+                                    <button type="button" id="btn-cancel-edit-proposal" class="btn btn-secondary hidden" title="Cancelar Edição">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Painel Principal: Histórico de Propostas -->
+                        <div class="dashboard-card table-panel">
+                            <div class="card-header">
+                                <h2>Histórico de Propostas</h2>
+                            </div>
+                            
+                            <!-- Barra de Filtros -->
+                            <div class="filters-bar">
+                                <div class="filter-search">
+                                    <div class="input-wrapper">
+                                        <i data-lucide="search" class="input-icon"></i>
+                                        <input type="text" id="filter-proposal-search-input" placeholder="Pesquisar cliente ou cód. proposta...">
+                                    </div>
+                                </div>
+                                <div class="filter-controls-grid">
+                                    <div class="input-wrapper select-wrapper">
+                                        <i data-lucide="users" class="input-icon"></i>
+                                        <select id="filter-proposal-vendedor">
+                                            <option value="todos">Todos Vendedores</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="date" id="filter-proposal-data-inicio" placeholder="De">
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="calendar" class="input-icon"></i>
+                                        <input type="date" id="filter-proposal-data-fim" placeholder="Até">
+                                    </div>
+                                    <button id="btn-limpar-proposal-filtros" class="btn btn-secondary btn-icon" title="Limpar Filtros">
+                                        <i data-lucide="rotate-ccw"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tabela do Histórico -->
+                            <div class="table-responsive select-table-scroll">
+                                <table class="data-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Observações</th>
+                                        <th>Proposta</th>
+                                        <th>Cliente</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Data</th>
+                                        <th>Executante</th>
+                                        <th>Valor2</th>
+                                        <th>Pagamento</th>
+                                        <th>Vendedor</th>
+                                        <th>Observações (2)</th>
+                                        <th class="actions-column">Ações</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="proposals-history-tbody">
+                                        <!-- Preenchido dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Paginação/Info -->
+                            <div class="table-footer-meta">
+                                <span id="table-proposals-count">Mostrando 0 de 0 registros</span>
+                                <div class="pagination-buttons">
+                                    <button class="btn btn-secondary btn-xs" id="btn-proposal-page-prev"><i data-lucide="chevron-left"></i></button>
+                                    <span id="table-proposal-page-number">1</span>
+                                    <button class="btn btn-secondary btn-xs" id="btn-proposal-page-next"><i data-lucide="chevron-right"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -697,6 +872,32 @@
                             </div>
                         </div>
 
+                        <!-- Painel: Gerenciar Formas de Pagamento -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2>Gerenciar Formas de Pagamento</h2>
+                                <p class="card-subtitle">Adicione ou remova as formas de pagamento aceitas no sistema</p>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                                <!-- Lista de Formas de Pagamento -->
+                                <ul id="payment-methods-list" class="payment-methods-list" style="list-style: none; display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 0;">
+                                    <!-- Preenchido dinamicamente -->
+                                </ul>
+                                
+                                <!-- Formulário rápido para adicionar -->
+                                <form id="add-payment-method-form" style="display: flex; gap: 10px;">
+                                    <div class="input-wrapper" style="flex-grow: 1;">
+                                        <i data-lucide="credit-card" class="input-icon"></i>
+                                        <input type="text" id="new-payment-method-input" placeholder="Nova forma de pagamento..." required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" style="padding: 0 16px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="plus" style="margin-right: 4px;"></i>
+                                        <span>Adicionar</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
                         <!-- Painel: Resumo Geral Consolidado (para o relatório impresso) -->
                         <div class="dashboard-card col-span-2 select-print-section">
                             <div class="card-header print-only-header">
@@ -747,6 +948,72 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL DE CONVERSÃO DE PROPOSTA EM VENDA -->
+    <div id="convert-proposal-modal" class="modal-wrapper hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <i data-lucide="check-circle" class="modal-icon-success" style="color: var(--success); width: 28px; height: 28px;"></i>
+                <h3>Converter Proposta em Venda</h3>
+            </div>
+            <form id="convert-proposal-form">
+                <input type="hidden" id="convert-proposal-id">
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+                    <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5;">
+                        Você está convertendo a proposta do cliente <strong id="convert-proposal-client" style="color: #fff;">Cliente</strong> no valor de <strong id="convert-proposal-value" style="color: #fff;">R$ 0,00</strong> em venda.
+                    </p>
+                    
+                    <div class="input-group">
+                        <label for="convert-sale-nota">Venda (NF) <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="file-text" class="input-icon"></i>
+                            <input type="text" id="convert-sale-nota" placeholder="Digite o número da nota" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="convert-sale-pagamento">Forma de Pagamento <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="credit-card" class="input-icon"></i>
+                            <select id="convert-sale-pagamento" required>
+                                <!-- Formas de pagamento dinâmicas -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Campo condicional de Detalhes do Boleto para a conversão -->
+                    <div id="convert-group-boleto-container" class="hidden">
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label for="convert-sale-quantidade-boleto">Quantidade de Boletos <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <i data-lucide="hash" class="input-icon"></i>
+                                <input type="number" id="convert-sale-quantidade-boleto" min="1" max="24" value="1">
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label for="convert-sale-vencimento">Vencimento do Primeiro Boleto <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <i data-lucide="calendar" class="input-icon"></i>
+                                <input type="date" id="convert-sale-vencimento">
+                            </div>
+                        </div>
+                        <div id="convert-boleto-division-preview" style="margin-bottom: 12px; font-weight: 600; color: var(--success); font-size: 0.85rem; display: none; padding: 10px 12px; background: var(--success-light); border-left: 3px solid var(--success); border-radius: 4px;">
+                            Valor por boleto: <span id="convert-boleto-division-value" style="font-weight: 700;">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btn-convert-cancel" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Venda</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DATALISTS PARA AUTOCOMPLETE (PREENCHIMENTO AUTOMÁTICO) -->
+    <datalist id="clients-list"></datalist>
+    <datalist id="executants-list"></datalist>
+    <datalist id="types-list"></datalist>
 
 </body>
 </html>

@@ -1697,4 +1697,54 @@ input, select, textarea, button {
     }
 }
 
+/* --- GERENCIADOR DE FORMAS DE PAGAMENTO --- */
+.payment-methods-list {
+    margin: 0;
+    padding: 0;
+}
+.payment-method-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: all var(--transition-fast) ease;
+}
+.payment-method-item:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+.payment-method-item button {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    border-radius: var(--border-radius-xs);
+    transition: all var(--transition-fast) ease;
+}
+.payment-method-item button:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+}
+
+/* Ajuste no botão de ação da tabela para propostas */
+.btn-convert-proposal {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.btn-convert-proposal:hover {
+    background-color: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+}
+
 
