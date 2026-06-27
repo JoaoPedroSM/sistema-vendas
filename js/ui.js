@@ -285,9 +285,15 @@ function refreshDashboard() {
         }
     }
 
-    // KPIs Cálculos (RF10, RF11)
-    const totalSales = sales.length;
-    const totalRevenue = sales.reduce((sum, s) => sum + s.valor, 0);
+    // KPIs Cálculos (Apenas vendas reais contam para faturamento)
+    const completedSales = sales.filter(s => {
+        const isProp = (s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) ||
+                       (s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === ''));
+        return !isProp;
+    });
+
+    const totalSales = completedSales.length;
+    const totalRevenue = completedSales.reduce((sum, s) => sum + s.valor, 0);
     const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
 
     // Acha melhor vendedor
@@ -295,7 +301,7 @@ function refreshDashboard() {
     let bestSellerCount = 0;
     const sellerCounts = {};
 
-    sales.forEach(s => {
+    completedSales.forEach(s => {
         sellerCounts[s.vendedorNome] = (sellerCounts[s.vendedorNome] || 0) + 1;
     });
 
@@ -318,8 +324,8 @@ function refreshDashboard() {
     const elKpiVendedorVendas = document.getElementById('kpi-melhor-vendedor-vendas');
     if (elKpiVendedorVendas) elKpiVendedorVendas.textContent = `${bestSellerCount} vendas`;
 
-    // Atualiza gráficos
-    updateCharts(sales, sellers);
+    // Atualiza gráficos (apenas vendas)
+    updateCharts(completedSales, sellers);
 
     // Tabela de Vendas Recentes (últimas 5)
     const recentSales = sales.slice(0, 5);
@@ -497,7 +503,7 @@ function renderSalesTable() {
                             <i data-lucide="check"></i>
                         </button>
                     ` : ''}
-                    ${(sale.tipo && (sale.tipo.toLowerCase() === 'proposta' || sale.tipo.toLowerCase() === 'orçamento' || sale.tipo.toLowerCase() === 'orcamento')) ? `
+                    ${((sale.tipo && (sale.tipo.toLowerCase() === 'proposta' || sale.tipo.toLowerCase() === 'orçamento' || sale.tipo.toLowerCase() === 'orcamento')) || (sale.proposta && (!sale.numeroNota || sale.numeroNota === '-' || sale.numeroNota.trim() === ''))) ? `
                         <button class="action-btn btn-convert-proposal btn-convert-sale-proposal" data-id="${sale.id}" title="Transformar Proposta em Venda">
                             <i data-lucide="shopping-cart"></i>
                         </button>

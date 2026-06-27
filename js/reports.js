@@ -8,10 +8,16 @@
  * Consolida as métricas de vendas por vendedor
  */
 export function getConsolidatedSellersMetrics(sales, sellers) {
-    const totalRevenueAll = sales.reduce((sum, sale) => sum + sale.valor, 0);
+    const completedSales = sales.filter(s => {
+        const isProp = (s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) ||
+                       (s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === ''));
+        return !isProp;
+    });
+
+    const totalRevenueAll = completedSales.reduce((sum, sale) => sum + sale.valor, 0);
     
     const metrics = sellers.map(seller => {
-        const sellerSales = sales.filter(s => s.vendedorId === seller.id);
+        const sellerSales = completedSales.filter(s => s.vendedorId === seller.id);
         const quantity = sellerSales.length;
         const revenue = sellerSales.reduce((sum, s) => sum + s.valor, 0);
         const averageTicket = quantity > 0 ? revenue / quantity : 0;
