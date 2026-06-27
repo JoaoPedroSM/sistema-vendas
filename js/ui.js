@@ -9,7 +9,7 @@ import {
     getSellers, addSeller, updateSeller, deleteSeller,
     getSales, addSale, deleteSale, payNextBoleto,
     clearDatabase, exportBackup, importBackup,
-    getProposals, addProposal, updateProposal, deleteProposal, convertProposalToSale,
+    convertExistingProposalToSale,
     getPaymentMethods, addPaymentMethod, deletePaymentMethod
 } from './db.js';
 import { updateCharts } from './charts.js';
@@ -43,10 +43,6 @@ let activeView = 'dashboard';
 let salesPage = 1;
 const salesPageSize = 10;
 let filteredSalesList = [];
-
-let proposalsPage = 1;
-const proposalsPageSize = 10;
-let filteredProposalsList = [];
 
 // Elementos gerais
 let activeModalConfirmCallback = null;
@@ -188,7 +184,6 @@ export function navigateTo(viewId) {
         const titleMap = {
             'dashboard': 'Dashboard de Vendas',
             'vendas': 'Lançamento e Histórico de Vendas',
-            'propostas': 'Lançamento e Histórico de Propostas',
             'vendedores': 'Gerenciamento de Vendedores',
             'relatorios': 'Exportação de Relatórios e Backup'
         };
@@ -210,8 +205,6 @@ export function navigateTo(viewId) {
             refreshDashboard();
         } else if (viewId === 'vendas') {
             refreshSalesPage();
-        } else if (viewId === 'propostas') {
-            refreshProposalsPage();
         } else if (viewId === 'vendedores') {
             refreshSellersPage();
         } else if (viewId === 'relatorios') {
@@ -497,12 +490,16 @@ function renderSalesTable() {
             <td>${getPaymentBadgeHTML(sale)}</td>
             <td>${sale.vencimentoBoleto ? new Date(sale.vencimentoBoleto + 'T12:00:00').toLocaleDateString('pt-BR') : '-'}</td>
             <td style="font-weight: 600;">${escapeHTML(sale.vendedorNome)}</td>
-            <td>${escapeHTML(sale.observacoes2)}</td>
             <td class="actions-column">
                 <div class="actions-cell-wrapper">
                     ${sale.formaPagamento === 'Boleto' && sale.status === 'Pendente' ? `
                         <button class="action-btn action-btn-success btn-pay-boleto" data-id="${sale.id}" title="Marcar Boleto como Pago">
                             <i data-lucide="check"></i>
+                        </button>
+                    ` : ''}
+                    ${(sale.tipo && (sale.tipo.toLowerCase() === 'proposta' || sale.tipo.toLowerCase() === 'orçamento' || sale.tipo.toLowerCase() === 'orcamento')) ? `
+                        <button class="action-btn btn-convert-proposal btn-convert-sale-proposal" data-id="${sale.id}" title="Transformar Proposta em Venda">
+                            <i data-lucide="shopping-cart"></i>
                         </button>
                     ` : ''}
                     <button class="action-btn action-btn-danger btn-delete-sale" data-id="${sale.id}" title="Excluir Venda">
@@ -569,6 +566,18 @@ function renderSalesTable() {
                     }
                 }
             );
+        });
+    });
+
+    // Atribui cliques de conversão de proposta em venda
+    tbody.querySelectorAll('.btn-convert-sale-proposal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            const sales = getSales();
+            const sale = sales.find(s => s.id === id);
+            if (sale) {
+                openConvertProposalModal(sale);
+            }
         });
     });
 }
@@ -1116,113 +1125,29 @@ export function bindUIEvents() {
         }
     });
 
-    // --- FORM DE PROPOSTAS ---
-    const proposalForm = document.getElementById('proposal-form');
-    proposalForm?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const idEdit = document.getElementById('proposal-id-edit')?.value || '';
-        const vendedorId = document.getElementById('proposal-vendedor')?.value || '';
-        const cliente = document.getElementById('proposal-cliente')?.value.trim() || '';
-        const tipo = document.getElementById('proposal-tipo')?.value.trim() || 'Proposta';
-        const codigo = document.getElementById('proposal-codigo')?.value.trim() || '';
-        const executante = document.getElementById('proposal-executante')?.value.trim() || '';
-        const valor = document.getElementById('proposal-valor')?.value || '0';
-        const valor2Val = document.getElementById('proposal-valor2')?.value || '';
-        const valor2 = valor2Val ? parseFloat(valor2Val) : null;
-        const dataVal = document.getElementById('proposal-data')?.value || '';
-        const pagamento = document.getElementById('proposal-pagamento')?.value || '';
-        const obs = document.getElementById('proposal-obs')?.value.trim() || '';
-        const obs2 = document.getElementById('proposal-obs2')?.value.trim() || '';
+    // --- GERENCIAMENTO DINÂMICO DE OBRIGATORIEDADE DA NF ---
+    const inputTipo = document.getElementById('sale-tipo');
+    const inputNota = document.getElementById('sale-nota');
+    const asteriskNota = inputNota?.closest('.input-group')?.querySelector('.required');
 
-        try {
-            if (idEdit) {
-                // Edição
-                if (updateProposal(
-                    idEdit, vendedorId, cliente, valor, dataVal, pagamento, obs,
-                    codigo, tipo, executante, valor2, obs2
-                )) {
-                    showToast('Proposta Atualizada', 'Os dados da proposta foram atualizados com sucesso.', 'success');
-                    resetProposalForm();
-                    refreshProposalsPage();
-                } else {
-                    showToast('Erro', 'Não foi possível atualizar a proposta.', 'danger');
-                }
+    const updateNotaRequiredState = () => {
+        if (inputTipo && inputNota) {
+            const val = inputTipo.value.trim().toLowerCase();
+            if (val === 'proposta' || val === 'orçamento' || val === 'orcamento') {
+                inputNota.removeAttribute('required');
+                if (asteriskNota) asteriskNota.style.display = 'none';
             } else {
-                // Nova proposta
-                const newProp = addProposal(
-                    vendedorId, cliente, valor, dataVal, pagamento, obs,
-                    codigo, tipo, executante, valor2, obs2
-                );
-                if (newProp) {
-                    showToast('Proposta Cadastrada', `Proposta ${newProp.proposta} registrada com sucesso.`, 'success');
-                    resetProposalForm();
-                    refreshProposalsPage();
-                }
+                inputNota.setAttribute('required', 'true');
+                if (asteriskNota) asteriskNota.style.display = 'inline';
             }
-        } catch (error) {
-            showToast('Erro na Operação', error.message, 'danger');
         }
-    });
+    };
 
-    // Cancelar Edição de Proposta
-    document.getElementById('btn-cancel-edit-proposal')?.addEventListener('click', resetProposalForm);
-
-    // --- FILTROS DE HISTÓRICO DE PROPOSTAS ---
-    document.getElementById('filter-proposal-search-input')?.addEventListener('input', () => {
-        proposalsPage = 1;
-        applyProposalsFilters();
-    });
+    inputTipo?.addEventListener('input', updateNotaRequiredState);
+    inputTipo?.addEventListener('change', updateNotaRequiredState);
     
-    document.getElementById('filter-proposal-vendedor')?.addEventListener('change', () => {
-        proposalsPage = 1;
-        applyProposalsFilters();
-    });
-    
-    document.getElementById('filter-proposal-data-inicio')?.addEventListener('change', () => {
-        proposalsPage = 1;
-        applyProposalsFilters();
-    });
-    
-    document.getElementById('filter-proposal-data-fim')?.addEventListener('change', () => {
-        proposalsPage = 1;
-        applyProposalsFilters();
-    });
-
-    // Botão Limpar Filtros de Propostas
-    document.getElementById('btn-limpar-proposal-filtros')?.addEventListener('click', () => {
-        const fSearch = document.getElementById('filter-proposal-search-input');
-        if (fSearch) fSearch.value = '';
-        
-        const fVendedor = document.getElementById('filter-proposal-vendedor');
-        if (fVendedor) fVendedor.value = 'todos';
-        
-        const fDataInicio = document.getElementById('filter-proposal-data-inicio');
-        if (fDataInicio) fDataInicio.value = '';
-        
-        const fDataFim = document.getElementById('filter-proposal-data-fim');
-        if (fDataFim) fDataFim.value = '';
-        
-        proposalsPage = 1;
-        applyProposalsFilters();
-        showToast('Filtros Limpos', 'A listagem está mostrando todas as propostas.', 'info');
-    });
-
-    // --- PAGINAÇÃO DE PROPOSTAS ---
-    document.getElementById('btn-proposal-page-prev')?.addEventListener('click', () => {
-        if (proposalsPage > 1) {
-            proposalsPage--;
-            renderProposalsTable();
-        }
-    });
-
-    document.getElementById('btn-proposal-page-next')?.addEventListener('click', () => {
-        const totalRecords = filteredProposalsList.length;
-        const totalPages = Math.ceil(totalRecords / proposalsPageSize);
-        if (proposalsPage < totalPages) {
-            proposalsPage++;
-            renderProposalsTable();
-        }
-    });
+    // Executa uma vez no início para alinhar com o valor inicial
+    updateNotaRequiredState();
 
     // --- EVENTOS DO MODAL DE CONVERSÃO DE PROPOSTA ---
     document.getElementById('btn-convert-cancel')?.addEventListener('click', closeConvertProposalModal);
@@ -1237,15 +1162,13 @@ export function bindUIEvents() {
         const vencimentoBoleto = document.getElementById('convert-sale-vencimento')?.value || '';
 
         try {
-            const newSale = convertProposalToSale(
+            const newSale = convertExistingProposalToSale(
                 proposalId, saleNota, finalPagamento, quantidadeBoletos, vencimentoBoleto
             );
             if (newSale) {
                 showToast('Conversão Concluída', `A proposta foi convertida em Venda com sucesso! NF: ${saleNota}`, 'success');
                 closeConvertProposalModal();
-                refreshProposalsPage();
                 refreshSalesPage();
-                navigateTo('vendas'); // Navega para vendas para ver o resultado
             }
         } catch (error) {
             showToast('Erro na Conversão', error.message, 'danger');
@@ -1266,248 +1189,11 @@ export function bindUIEvents() {
                 refreshPaymentMethodsList();
                 // Atualiza dropdowns abertos
                 refreshSalesPage();
-                refreshProposalsPage();
             } else {
                 showToast('Aviso', 'Forma de pagamento já cadastrada ou inválida.', 'warning');
             }
         }
     });
-}
-
-/**
- * Atualiza a tela de Propostas (Lista, Filtros, Formulário)
- */
-export function refreshProposalsPage() {
-    const sellers = getSellers();
-    
-    // Atualiza dropdowns de vendedores (Cadastro de Propostas e Filtro de Propostas)
-    const selectForm = document.getElementById('proposal-vendedor');
-    const selectFilter = document.getElementById('filter-proposal-vendedor');
-    
-    if (selectForm) {
-        selectForm.innerHTML = '<option value="" disabled selected>Selecione o vendedor</option>' + 
-            sellers.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
-    }
-
-    if (selectFilter) {
-        const currentVal = selectFilter.value || 'todos';
-        selectFilter.innerHTML = '<option value="todos">Todos Vendedores</option>' +
-            sellers.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
-        selectFilter.value = currentVal;
-    }
-
-    // Atualiza dropdown de formas de pagamento sugeridas
-    const selectPagamento = document.getElementById('proposal-pagamento');
-    if (selectPagamento) {
-        const currentVal = selectPagamento.value;
-        const methods = getPaymentMethods();
-        selectPagamento.innerHTML = '<option value="" disabled selected>Selecione o pagamento</option>' +
-            methods.map(m => `<option value="${m}">${escapeHTML(m)}</option>`).join('');
-        if (currentVal && methods.includes(currentVal)) {
-            selectPagamento.value = currentVal;
-        }
-    }
-
-    // Configura data padrão do form de proposta como data/hora atual local
-    const proposalDateInput = document.getElementById('proposal-data');
-    if (proposalDateInput && !proposalDateInput.value) {
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
-        proposalDateInput.value = localISOTime;
-    }
-
-    updateAutocompletes();
-    applyProposalsFilters();
-}
-
-/**
- * Aplica os filtros de propostas ativos e atualiza a tabela
- */
-function applyProposalsFilters() {
-    const proposals = getProposals();
-    const searchVal = (document.getElementById('filter-proposal-search-input')?.value || '').toLowerCase().trim();
-    const sellerVal = document.getElementById('filter-proposal-vendedor')?.value || 'todos';
-    const startVal = document.getElementById('filter-proposal-data-inicio')?.value || '';
-    const endVal = document.getElementById('filter-proposal-data-fim')?.value || '';
-
-    filteredProposalsList = proposals.filter(prop => {
-        // Busca por cliente ou código da proposta
-        const matchSearch = prop.cliente.toLowerCase().includes(searchVal) || 
-                            (prop.proposta && prop.proposta.toLowerCase().includes(searchVal));
-        
-        // Filtro por Vendedor
-        const matchSeller = sellerVal === 'todos' || prop.vendedorId === sellerVal;
-        
-        // Filtro por Período
-        let matchDate = true;
-        const propDate = new Date(prop.data);
-        propDate.setHours(0, 0, 0, 0);
-
-        if (startVal) {
-            const startDate = new Date(startVal);
-            startDate.setHours(0,0,0,0);
-            if (propDate < startDate) matchDate = false;
-        }
-
-        if (endVal) {
-            const endDate = new Date(endVal);
-            endDate.setHours(0,0,0,0);
-            if (propDate > endDate) matchDate = false;
-        }
-
-        return matchSearch && matchSeller && matchDate;
-    });
-
-    renderProposalsTable();
-}
-
-/**
- * Renderiza a tabela de propostas com base na paginação
- */
-function renderProposalsTable() {
-    const tbody = document.getElementById('proposals-history-tbody');
-    if (!tbody) return;
-
-    const totalRecords = filteredProposalsList.length;
-    const totalPages = Math.max(1, Math.ceil(totalRecords / proposalsPageSize));
-
-    if (proposalsPage > totalPages) proposalsPage = totalPages;
-    if (proposalsPage < 1) proposalsPage = 1;
-
-    const startIndex = (proposalsPage - 1) * proposalsPageSize;
-    const pageProposals = filteredProposalsList.slice(startIndex, startIndex + proposalsPageSize);
-
-    const countEl = document.getElementById('table-proposals-count');
-    if (countEl) {
-        countEl.textContent = totalRecords > 0 
-            ? `Mostrando ${startIndex + 1} a ${Math.min(startIndex + proposalsPageSize, totalRecords)} de ${totalRecords} propostas`
-            : `Nenhuma proposta encontrada`;
-    }
-    const pageEl = document.getElementById('table-proposal-page-number');
-    if (pageEl) pageEl.textContent = proposalsPage;
-    const btnPrev = document.getElementById('btn-proposal-page-prev');
-    if (btnPrev) btnPrev.disabled = proposalsPage === 1;
-    const btnNext = document.getElementById('btn-proposal-page-next');
-    if (btnNext) btnNext.disabled = proposalsPage === totalPages;
-
-    if (pageProposals.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" class="text-muted text-center" style="text-align: center;">Nenhuma proposta encontrada.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = pageProposals.map(prop => `
-        <tr>
-            <td>${escapeHTML(prop.observacoes)}</td>
-            <td><span class="badge badge-primary">${escapeHTML(prop.proposta)}</span></td>
-            <td>${escapeHTML(prop.cliente)}</td>
-            <td>${escapeHTML(prop.tipo)}</td>
-            <td class="money-cell" style="font-weight: 700; color: var(--success);">${prop.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-            <td>${new Date(prop.data).toLocaleDateString('pt-BR')}</td>
-            <td>${escapeHTML(prop.executante)}</td>
-            <td class="money-cell" style="font-weight: 600; color: var(--text-secondary);">${prop.valor2 ? prop.valor2.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
-            <td><span class="badge badge-secondary">${escapeHTML(prop.formaPagamento) || '-'}</span></td>
-            <td style="font-weight: 600;">${escapeHTML(prop.vendedorNome)}</td>
-            <td>${escapeHTML(prop.observacoes2)}</td>
-            <td class="actions-column">
-                <div class="actions-cell-wrapper">
-                    <button class="action-btn btn-convert-proposal" data-id="${prop.id}" title="Converter em Venda">
-                        <i data-lucide="shopping-cart"></i>
-                    </button>
-                    <button class="action-btn action-btn-primary btn-edit-proposal" data-id="${prop.id}" title="Editar Proposta">
-                        <i data-lucide="edit-3"></i>
-                    </button>
-                    <button class="action-btn action-btn-danger btn-delete-proposal" data-id="${prop.id}" title="Excluir Proposta">
-                        <i data-lucide="trash-2"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
-    lucide.createIcons();
-
-    // Eventos de Ações na Tabela de Propostas
-    tbody.querySelectorAll('.btn-delete-proposal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            openConfirmModal(
-                'Confirmar Exclusão',
-                `Tem certeza que deseja excluir a proposta de ID ${id.replace('prop_', '')}? Esta ação é definitiva.`,
-                () => {
-                    if (deleteProposal(id)) {
-                        showToast('Proposta Excluída', 'O registro foi removido com sucesso.', 'success');
-                        refreshProposalsPage();
-                    } else {
-                        showToast('Erro', 'Não foi possível excluir o registro.', 'danger');
-                    }
-                }
-            );
-        });
-    });
-
-    tbody.querySelectorAll('.btn-edit-proposal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            const proposals = getProposals();
-            const prop = proposals.find(p => p.id === id);
-            if (prop) {
-                document.getElementById('proposal-id-edit').value = prop.id;
-                document.getElementById('proposal-vendedor').value = prop.vendedorId;
-                document.getElementById('proposal-cliente').value = prop.cliente;
-                document.getElementById('proposal-tipo').value = prop.tipo;
-                document.getElementById('proposal-codigo').value = prop.proposta;
-                document.getElementById('proposal-executante').value = prop.executante;
-                document.getElementById('proposal-valor').value = prop.valor;
-                document.getElementById('proposal-valor2').value = prop.valor2 || '';
-                
-                // Formata data ISO para datetime-local input
-                const offset = new Date(prop.data).getTimezoneOffset() * 60000;
-                document.getElementById('proposal-data').value = new Date(new Date(prop.data) - offset).toISOString().slice(0, 16);
-                
-                document.getElementById('proposal-pagamento').value = prop.formaPagamento || '';
-                document.getElementById('proposal-obs').value = prop.observacoes;
-                document.getElementById('proposal-obs2').value = prop.observacoes2;
-
-                document.getElementById('title-form-proposta').textContent = 'Editar Proposta';
-                document.getElementById('btn-proposal-submit-text').textContent = 'Salvar Alterações';
-                document.getElementById('btn-cancel-edit-proposal').classList.remove('hidden');
-
-                showToast('Modo de Edição', 'Editando dados da proposta.', 'info');
-            }
-        });
-    });
-
-    tbody.querySelectorAll('.btn-convert-proposal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            const proposals = getProposals();
-            const prop = proposals.find(p => p.id === id);
-            if (prop) {
-                openConvertProposalModal(prop);
-            }
-        });
-    });
-}
-
-function resetProposalForm() {
-    const form = document.getElementById('proposal-form');
-    if (form) form.reset();
-    
-    const idEdit = document.getElementById('proposal-id-edit');
-    if (idEdit) idEdit.value = '';
-    
-    document.getElementById('title-form-proposta').textContent = 'Registrar Nova Proposta';
-    document.getElementById('btn-proposal-submit-text').textContent = 'Salvar Proposta';
-    document.getElementById('btn-cancel-edit-proposal').classList.add('hidden');
-    
-    // Reseta data padrão
-    const proposalDateInput = document.getElementById('proposal-data');
-    if (proposalDateInput) {
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        proposalDateInput.value = (new Date(now - offset)).toISOString().slice(0, 16);
-    }
 }
 
 /**
@@ -1661,7 +1347,6 @@ function refreshPaymentMethodsList() {
                         refreshPaymentMethodsList();
                         // Atualiza dropdowns abertos
                         refreshSalesPage();
-                        refreshProposalsPage();
                     } else {
                         showToast('Erro', 'Não foi possível remover a forma de pagamento.', 'danger');
                     }
@@ -1676,13 +1361,11 @@ function refreshPaymentMethodsList() {
  */
 function updateAutocompletes() {
     const sales = getSales();
-    const proposals = getProposals();
     const sellers = getSellers();
 
     // 1. Clientes únicos
     const clients = new Set();
     sales.forEach(s => { if (s.cliente) clients.add(s.cliente); });
-    proposals.forEach(p => { if (p.cliente) clients.add(p.cliente); });
     const dlClients = document.getElementById('clients-list');
     if (dlClients) {
         dlClients.innerHTML = Array.from(clients).map(c => `<option value="${escapeHTML(c)}">`).join('');
@@ -1692,7 +1375,6 @@ function updateAutocompletes() {
     const executants = new Set();
     sellers.filter(s => s.status === 'Ativo').forEach(s => executants.add(s.name));
     sales.forEach(s => { if (s.executante) executants.add(s.executante); });
-    proposals.forEach(p => { if (p.executante) executants.add(p.executante); });
     const dlExecutants = document.getElementById('executants-list');
     if (dlExecutants) {
         dlExecutants.innerHTML = Array.from(executants).map(e => `<option value="${escapeHTML(e)}">`).join('');
@@ -1701,7 +1383,6 @@ function updateAutocompletes() {
     // 3. Tipos únicos
     const types = new Set(["Venda", "Serviço", "Orçamento", "Proposta"]);
     sales.forEach(s => { if (s.tipo) types.add(s.tipo); });
-    proposals.forEach(p => { if (p.tipo) types.add(p.tipo); });
     const dlTypes = document.getElementById('types-list');
     if (dlTypes) {
         dlTypes.innerHTML = Array.from(types).map(t => `<option value="${escapeHTML(t)}">`).join('');

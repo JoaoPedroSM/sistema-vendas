@@ -337,151 +337,33 @@ export function importBackup(encryptedJsonStr, testPassword) {
 }
 
 /**
- * Retorna as propostas
+ * Converte um registro existente do tipo Proposta em Venda
  */
-export function getProposals() {
-    if (!currentDatabase) return [];
-    if (!currentDatabase.proposals) {
-        currentDatabase.proposals = [];
-    }
-    // Preenche defaults para retrocompatibilidade
-    currentDatabase.proposals.forEach(prop => {
-        if (prop.valor2 === undefined) prop.valor2 = null;
-        if (prop.executante === undefined) prop.executante = '';
-        if (prop.formaPagamento === undefined) prop.formaPagamento = '';
-        if (prop.observacoes2 === undefined) prop.observacoes2 = '';
-    });
-    return [...currentDatabase.proposals];
-}
-
-/**
- * Adiciona uma proposta
- */
-export function addProposal(vendedorId, cliente, valor, dataStr, formaPagamento, observacoes, propostaCodigo = '', tipo = 'Proposta', executante = '', valor2 = null, observacoes2 = '') {
-    if (!currentDatabase) return null;
-    if (!currentDatabase.proposals) currentDatabase.proposals = [];
-
-    const vendedor = currentDatabase.sellers.find(s => s.id === vendedorId);
-    if (!vendedor) throw new Error('Vendedor não encontrado.');
-
-    const timestamp = Date.now();
-    const finalCodigo = propostaCodigo.trim() || 'PROP-' + timestamp;
-
-    const newProposal = {
-        id: 'prop_' + timestamp,
-        vendedorId,
-        vendedorNome: vendedor.name,
-        cliente,
-        valor: parseFloat(valor),
-        data: new Date(dataStr).toISOString(),
-        formaPagamento: formaPagamento || '',
-        observacoes: observacoes || '',
-        proposta: finalCodigo,
-        tipo: tipo || 'Proposta',
-        executante: executante || '',
-        valor2: valor2 ? parseFloat(valor2) : null,
-        observacoes2: observacoes2 || ''
-    };
-
-    currentDatabase.proposals.push(newProposal);
-    currentDatabase.proposals.sort((a, b) => new Date(b.data) - new Date(a.data));
+export function convertExistingProposalToSale(saleId, saleNota, finalPagamento, quantidadeBoletos = 1, vencimentoBoleto = null) {
+    if (!currentDatabase || !currentDatabase.sales) return null;
     
-    saveDatabase();
-    return newProposal;
-}
+    const sale = currentDatabase.sales.find(s => s.id === saleId);
+    if (!sale) throw new Error('Proposta não encontrada no banco de dados.');
 
-/**
- * Atualiza uma proposta existente
- */
-export function updateProposal(id, vendedorId, cliente, valor, dataStr, formaPagamento, observacoes, propostaCodigo = '', tipo = 'Proposta', executante = '', valor2 = null, observacoes2 = '') {
-    if (!currentDatabase || !currentDatabase.proposals) return false;
+    sale.numeroNota = saleNota;
+    sale.formaPagamento = finalPagamento;
+    sale.tipo = 'Venda'; // Transforma em Venda!
+    sale.data = new Date().toISOString(); // Atualiza a data da venda para hoje
 
-    const idx = currentDatabase.proposals.findIndex(p => p.id === id);
-    if (idx === -1) return false;
-
-    const vendedor = currentDatabase.sellers.find(s => s.id === vendedorId);
-    if (!vendedor) throw new Error('Vendedor não encontrado.');
-
-    const finalCodigo = propostaCodigo.trim() || 'PROP-' + Date.now();
-
-    currentDatabase.proposals[idx] = {
-        id,
-        vendedorId,
-        vendedorNome: vendedor.name,
-        cliente,
-        valor: parseFloat(valor),
-        data: new Date(dataStr).toISOString(),
-        formaPagamento: formaPagamento || '',
-        observacoes: observacoes || '',
-        proposta: finalCodigo,
-        tipo: tipo || 'Proposta',
-        executante: executante || '',
-        valor2: valor2 ? parseFloat(valor2) : null,
-        observacoes2: observacoes2 || ''
-    };
-
-    currentDatabase.proposals.sort((a, b) => new Date(b.data) - new Date(a.data));
-    saveDatabase();
-    return true;
-}
-
-/**
- * Exclui uma proposta pelo ID
- */
-export function deleteProposal(id) {
-    if (!currentDatabase || !currentDatabase.proposals) return false;
-
-    const lengthBefore = currentDatabase.proposals.length;
-    currentDatabase.proposals = currentDatabase.proposals.filter(p => p.id !== id);
-
-    if (currentDatabase.proposals.length < lengthBefore) {
-        saveDatabase();
-        return true;
+    if (finalPagamento === 'Boleto') {
+        sale.quantidadeBoletos = parseInt(quantidadeBoletos);
+        sale.boletosPagos = 0;
+        sale.vencimentoBoleto = vencimentoBoleto || null;
+        sale.status = 'Pendente';
+    } else {
+        sale.quantidadeBoletos = null;
+        sale.boletosPagos = null;
+        sale.vencimentoBoleto = null;
+        sale.status = 'Pago';
     }
-    return false;
-}
-
-/**
- * Converte proposta em venda
- */
-export function convertProposalToSale(proposalId, saleNota, finalPagamento, quantidadeBoletos = 1, vencimentoBoleto = null) {
-    if (!currentDatabase) return null;
-    if (!currentDatabase.proposals) currentDatabase.proposals = [];
-
-    const proposal = currentDatabase.proposals.find(p => p.id === proposalId);
-    if (!proposal) throw new Error('Proposta não encontrada.');
-
-    // Adiciona a venda usando os dados da proposta + dados finais da venda
-    const newSale = {
-        id: 'venda_' + Date.now(),
-        vendedorId: proposal.vendedorId,
-        vendedorNome: proposal.vendedorNome,
-        cliente: proposal.cliente,
-        numeroNota: saleNota,
-        valor: proposal.valor,
-        data: new Date().toISOString(), // Data de hoje como data da venda
-        formaPagamento: finalPagamento,
-        vencimentoBoleto: vencimentoBoleto || null,
-        quantidadeBoletos: finalPagamento === 'Boleto' ? parseInt(quantidadeBoletos) : null,
-        boletosPagos: finalPagamento === 'Boleto' ? 0 : null,
-        status: finalPagamento === 'Boleto' ? 'Pendente' : 'Pago',
-        observacoes: proposal.observacoes || '',
-        proposta: proposal.proposta,
-        tipo: 'Venda', // Ao converter, vira tipo "Venda"
-        executante: proposal.executante || '',
-        valor2: proposal.valor2,
-        observacoes2: proposal.observacoes2 || ''
-    };
-
-    if (!currentDatabase.sales) currentDatabase.sales = [];
-    currentDatabase.sales.push(newSale);
-    currentDatabase.sales.sort((a, b) => new Date(b.data) - new Date(a.data));
-
-    // Remove a proposta convertida
-    currentDatabase.proposals = currentDatabase.proposals.filter(p => p.id !== proposalId);
 
     saveDatabase();
-    return newSale;
+    return sale;
 }
 
 /**
