@@ -1298,6 +1298,7 @@ export function bindUIEvents() {
 
     // --- EVENTOS DO MODAL DE CONVERSÃO DE PROPOSTA ---
     document.getElementById('btn-convert-cancel')?.addEventListener('click', closeConvertProposalModal);
+    triggerConvertBoletoDetails();
     
     const convertProposalForm = document.getElementById('convert-proposal-form');
     convertProposalForm?.addEventListener('submit', (e) => {
@@ -1346,6 +1347,9 @@ export function bindUIEvents() {
 /**
  * Abre o modal de conversão de proposta em venda
  */
+/**
+ * Abre o modal de conversão de proposta em venda
+ */
 function openConvertProposalModal(proposal) {
     const modal = document.getElementById('convert-proposal-modal');
     if (!modal) return;
@@ -1374,24 +1378,21 @@ function openConvertProposalModal(proposal) {
         }
     }
 
-    // Esconde boleto por padrão
-    const groupBoleto = document.getElementById('convert-group-boleto-container');
-    if (groupBoleto) groupBoleto.classList.add('hidden');
-
+    // Prefila vencimento e quantidade caso venha da proposta como Boleto
     const inputVencimento = document.getElementById('convert-sale-vencimento');
-    if (inputVencimento) inputVencimento.removeAttribute('required');
+    if (inputVencimento) {
+        inputVencimento.value = proposal.vencimentoBoleto || '';
+    }
 
     const inputQuantidade = document.getElementById('convert-sale-quantidade-boleto');
     if (inputQuantidade) {
-        inputQuantidade.removeAttribute('required');
-        inputQuantidade.value = '1';
+        inputQuantidade.value = proposal.quantidadeBoletos || '1';
     }
 
-    const previewContainer = document.getElementById('convert-boleto-division-preview');
-    if (previewContainer) previewContainer.style.display = 'none';
-
-    // Dispara trigger de alteração de boleto no modal
-    triggerConvertBoletoDetails();
+    // Dispara manualmente um evento de change para configurar a visibilidade inicial dos campos
+    if (selectPagamento) {
+        selectPagamento.dispatchEvent(new Event('change'));
+    }
 
     modal.classList.remove('hidden');
     lucide.createIcons();
@@ -1434,10 +1435,16 @@ function triggerConvertBoletoDetails() {
             inputVencimento?.setAttribute('required', 'true');
             inputQuantidade?.setAttribute('required', 'true');
             
-            const d = new Date();
-            d.setDate(d.getDate() + 3);
-            if (inputVencimento) inputVencimento.value = d.toISOString().split('T')[0];
-            if (inputQuantidade) inputQuantidade.value = '1';
+            // Define data padrão de hoje + 3 dias apenas se estiver vazio
+            if (inputVencimento && !inputVencimento.value) {
+                const d = new Date();
+                d.setDate(d.getDate() + 3);
+                inputVencimento.value = d.toISOString().split('T')[0];
+            }
+            // Garante quantidade mínima se vazio ou zero
+            if (inputQuantidade && (!inputQuantidade.value || inputQuantidade.value === '0')) {
+                inputQuantidade.value = '1';
+            }
         } else {
             groupBoleto?.classList.add('hidden');
             inputVencimento?.removeAttribute('required');
