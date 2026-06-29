@@ -283,10 +283,34 @@
                         </div>
                     </div>
 
+                    <!-- Controles de Exibição dos Gráficos -->
+                    <div class="dashboard-card" style="margin-bottom: 24px; padding: 14px 20px;">
+                        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="sliders" style="color: var(--primary); width: 20px; height: 20px;"></i>
+                                <h3 style="font-size: 0.95rem; font-weight: 600; margin: 0; color: #fff;">Visualização dos Gráficos</h3>
+                            </div>
+                            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+                                    <input type="checkbox" id="chk-chart-temporal" checked style="accent-color: var(--primary); cursor: pointer;">
+                                    Acompanhamento Temporal
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+                                    <input type="checkbox" id="chk-chart-vendedores" checked style="accent-color: var(--primary); cursor: pointer;">
+                                    Vendas por Vendedor
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+                                    <input type="checkbox" id="chk-chart-anual" checked style="accent-color: var(--primary); cursor: pointer;">
+                                    Faturamento por Ano
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Layout de Gráficos -->
                     <div class="dashboard-grid">
                         <!-- Card do Gráfico de Período -->
-                        <div class="dashboard-card card-chart">
+                        <div class="dashboard-card card-chart" id="card-chart-periodo">
                             <div class="card-header flex-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <h2>Acompanhamento Temporal das Vendas</h2>
@@ -303,7 +327,7 @@
                         </div>
 
                         <!-- Card do Gráfico por Vendedor -->
-                        <div class="dashboard-card card-chart">
+                        <div class="dashboard-card card-chart" id="card-chart-vendedor">
                             <div class="card-header">
                                 <h2>Vendas por Vendedor</h2>
                                 <span class="badge">Vendedores</span>
@@ -314,7 +338,7 @@
                         </div>
 
                         <!-- Card do Gráfico Anual -->
-                        <div class="dashboard-card card-chart">
+                        <div class="dashboard-card card-chart" id="card-chart-mensal">
                             <div class="card-header">
                                 <h2>Faturamento por Ano</h2>
                                 <span class="badge">Anual</span>
