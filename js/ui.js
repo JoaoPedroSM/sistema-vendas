@@ -10,10 +10,14 @@ import {
     getSales, addSale, deleteSale, payNextBoleto,
     clearDatabase, exportBackup, importBackup,
     convertExistingProposalToSale,
-    getPaymentMethods, addPaymentMethod, deletePaymentMethod
+    getPaymentMethods, addPaymentMethod, deletePaymentMethod,
+    getSystemSettings, updateSystemSettings
 } from './db.js';
 import { updateCharts } from './charts.js';
 import { getConsolidatedSellersMetrics, exportToExcel, exportToPDF } from './reports.js';
+
+let activeSalesView = 'table';
+let calendarCurrentDate = new Date();
 
 /**
  * Escapa caracteres especiais de uma string para evitar vulnerabilidades de XSS (Cross-Site Scripting)
@@ -327,6 +331,44 @@ function refreshDashboard() {
     // Atualiza gráficos (apenas vendas)
     updateCharts(completedSales, sellers);
 
+    // Metas de Faturamento (Gamificação)
+    const goalsContainer = document.getElementById('sellers-goals-container');
+    if (goalsContainer) {
+        if (sellers.length === 0) {
+            goalsContainer.innerHTML = `<p class="text-muted text-center" style="font-style:italic; padding: 10px;">Nenhum vendedor cadastrado.</p>`;
+        } else {
+            goalsContainer.innerHTML = sellers.map(seller => {
+                const sellerSales = completedSales.filter(s => s.vendedorId === seller.id);
+                const totalFaturado = sellerSales.reduce((sum, s) => sum + s.valor, 0);
+                const goalVal = seller.goal || 5000;
+                const pct = Math.min(100, Math.round((totalFaturado / goalVal) * 100));
+                const isReached = totalFaturado >= goalVal;
+                
+                return `
+                    <div class="seller-goal-row">
+                        <div class="seller-goal-info">
+                            <span class="seller-goal-name">
+                                <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+                                ${escapeHTML(seller.name)}
+                                ${isReached ? '<span style="color:var(--success); font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:2px; margin-left: 6px;"><i data-lucide="award" style="width:12px;height:12px;"></i>Meta Batida! 🏆</span>' : ''}
+                            </span>
+                            <span class="seller-goal-values">
+                                <strong>${totalFaturado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> / ${goalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (${pct}%)
+                            </span>
+                        </div>
+                        <div class="seller-goal-bar-bg">
+                            <div class="seller-goal-bar-fill ${isReached ? 'goal-reached' : ''}" style="width: ${pct}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
+
     // Tabela de Vendas Recentes (últimas 5)
     const recentSales = sales.slice(0, 5);
     const tbody = document.getElementById('recent-sales-tbody');
@@ -442,7 +484,11 @@ function applySalesFilters() {
         return matchSearch && matchSeller && matchDate;
     });
 
-    renderSalesTable();
+    if (activeSalesView === 'kanban') {
+        renderSalesKanban();
+    } else {
+        renderSalesTable();
+    }
 }
 
 /**
@@ -502,6 +548,9 @@ function renderSalesTable() {
                         <button class="action-btn action-btn-success btn-pay-boleto" data-id="${sale.id}" title="Marcar Boleto como Pago">
                             <i data-lucide="check"></i>
                         </button>
+                        <button class="action-btn btn-invoice-followup" data-id="${sale.id}" title="Cobrar via WhatsApp" style="background-color: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2);">
+                            <i data-lucide="message-square"></i>
+                        </button>
                     ` : ''}
                     ${((sale.tipo && (sale.tipo.toLowerCase() === 'proposta' || sale.tipo.toLowerCase() === 'orçamento' || sale.tipo.toLowerCase() === 'orcamento')) || (sale.proposta && (!sale.numeroNota || sale.numeroNota === '-' || sale.numeroNota.trim() === ''))) ? `
                         <button class="action-btn btn-convert-proposal btn-convert-sale-proposal" data-id="${sale.id}" title="Transformar Proposta em Venda">
@@ -556,6 +605,14 @@ function renderSalesTable() {
         });
     });
 
+    // Atribui cliques de cobrança via WhatsApp
+    tbody.querySelectorAll('.btn-invoice-followup').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            triggerInvoiceFollowup(id);
+        });
+    });
+
     // Atribui cliques de exclusão
     tbody.querySelectorAll('.btn-delete-sale').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -599,7 +656,7 @@ function refreshSellersPage() {
     if (!tbody) return;
 
     if (sellers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="text-align: center;">Nenhum vendedor cadastrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-muted text-center" style="text-align: center;">Nenhum vendedor cadastrado.</td></tr>`;
         return;
     }
 
@@ -609,12 +666,14 @@ function refreshSellersPage() {
         const count = sellerSales.length;
         const total = sellerSales.reduce((sum, s) => sum + s.valor, 0);
         const statusBadgeClass = seller.status === 'Ativo' ? 'badge-success' : 'badge-danger';
+        const goalVal = seller.goal || 5000;
 
         return `
             <tr>
                 <td style="font-weight: 600;">${escapeHTML(seller.name)}</td>
                 <td>${escapeHTML(seller.email)}</td>
                 <td>${escapeHTML(seller.phone || '-')}</td>
+                <td class="money-cell" style="font-weight: 600; color: var(--text-secondary);">${goalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                 <td style="font-weight: 600; text-align: center;">${count}</td>
                 <td class="money-cell" style="font-weight: 700; color: var(--success);">${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                 <td><span class="badge ${statusBadgeClass}">${escapeHTML(seller.status)}</span></td>
@@ -650,6 +709,8 @@ function refreshSellersPage() {
                 if (elPhone) elPhone.value = seller.phone;
                 const elStatus = document.getElementById('seller-status');
                 if (elStatus) elStatus.value = seller.status;
+                const elGoal = document.getElementById('seller-goal');
+                if (elGoal) elGoal.value = seller.goal || 5000;
                 
                 const elTitle = document.getElementById('title-form-vendedor');
                 if (elTitle) elTitle.textContent = 'Editar Vendedor';
@@ -704,6 +765,9 @@ function resetSellerForm() {
     
     const btnCancelEditSeller = document.getElementById('btn-cancel-edit-seller');
     if (btnCancelEditSeller) btnCancelEditSeller.classList.add('hidden');
+
+    const elGoal = document.getElementById('seller-goal');
+    if (elGoal) elGoal.value = '5000.00';
 }
 
 /**
@@ -720,20 +784,22 @@ function refreshReportsPage() {
 
     if (consolidated.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center" style="text-align: center;">Nenhum faturamento consolidado.</td></tr>`;
-        return;
+    } else {
+        tbody.innerHTML = consolidated.map(item => `
+            <tr>
+                <td style="font-weight: 600;">${escapeHTML(item.name)}</td>
+                <td style="text-align: center; font-weight: 600;">${item.quantity}</td>
+                <td class="money-cell" style="font-weight: 700; color: var(--success);">${item.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                <td style="font-weight: 600;">${item.percentage.toFixed(1)}%</td>
+                <td class="money-cell" style="color: var(--info); font-weight: 600;">${item.averageTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            </tr>
+        `).join('');
     }
 
-    tbody.innerHTML = consolidated.map(item => `
-        <tr>
-            <td style="font-weight: 600;">${escapeHTML(item.name)}</td>
-            <td style="text-align: center; font-weight: 600;">${item.quantity}</td>
-            <td class="money-cell" style="font-weight: 700; color: var(--success);">${item.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-            <td style="font-weight: 600;">${item.percentage.toFixed(1)}%</td>
-            <td class="money-cell" style="color: var(--info); font-weight: 600;">${item.averageTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-        </tr>
-    `).join('');
-
     refreshPaymentMethodsList();
+    renderFinancialCalendar();
+    populateSystemSettingsInForm();
+    updateCloudBadge();
 }
 
 /**
@@ -1096,7 +1162,12 @@ export function bindUIEvents() {
         // Atualiza gráficos com as novas cores de tema
         const sales = getSales();
         const sellers = getSellers();
-        updateCharts(sales, sellers);
+        const completedSales = sales.filter(s => {
+            const isProp = (s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) ||
+                           (s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === ''));
+            return !isProp;
+        });
+        updateCharts(completedSales, sellers);
     });
 
     // Toggle de Modo Privacidade (Ocultar Valores Sensíveis)
@@ -1115,6 +1186,76 @@ export function bindUIEvents() {
             openIcon?.classList.remove('hidden');
             closedIcon?.classList.add('hidden');
             showToast('Modo Privacidade', 'Valores financeiros estão visíveis novamente.', 'info');
+        }
+    });
+
+    // --- ALTERNAR VISUALIZAÇÃO DE HISTÓRICO (TABELA VS KANBAN) ---
+    document.getElementById('btn-view-table')?.addEventListener('click', (e) => {
+        activeSalesView = 'table';
+        document.getElementById('btn-view-table').classList.add('active');
+        document.getElementById('btn-view-kanban').classList.remove('active');
+        document.querySelector('.table-panel .table-responsive').classList.remove('hidden');
+        document.querySelector('.table-panel .table-footer-meta').classList.remove('hidden');
+        document.getElementById('sales-kanban-board').classList.add('hidden');
+        renderSalesTable();
+    });
+
+    document.getElementById('btn-view-kanban')?.addEventListener('click', (e) => {
+        activeSalesView = 'kanban';
+        document.getElementById('btn-view-table').classList.remove('active');
+        document.getElementById('btn-view-kanban').classList.add('active');
+        document.querySelector('.table-panel .table-responsive').classList.add('hidden');
+        document.querySelector('.table-panel .table-footer-meta').classList.add('hidden');
+        document.getElementById('sales-kanban-board').classList.remove('hidden');
+        renderSalesKanban();
+    });
+
+    // --- CONTROLES DO CALENDÁRIO FINANCEIRO ---
+    document.getElementById('btn-calendar-prev')?.addEventListener('click', () => {
+        calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() - 1);
+        renderFinancialCalendar();
+    });
+
+    document.getElementById('btn-calendar-next')?.addEventListener('click', () => {
+        calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + 1);
+        renderFinancialCalendar();
+    });
+
+    // --- CONFIGURAÇÕES DO SISTEMA (FORM SUBMIT) ---
+    const settingsForm = document.getElementById('system-settings-form');
+    settingsForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pixKey = document.getElementById('settings-pix-key')?.value || '';
+        const webhookUrl = document.getElementById('settings-webhook-url')?.value || '';
+        if (updateSystemSettings(pixKey, webhookUrl)) {
+            showToast('Configurações Salvas', 'Os dados de cobrança e webhook foram atualizados.', 'success');
+            updateCloudBadge();
+        } else {
+            showToast('Erro', 'Não foi possível salvar as configurações.', 'danger');
+        }
+    });
+
+    // --- STATUS WEBHOOK SINC ---
+    window.addEventListener('webhook-backup-status', (e) => {
+        const badge = document.getElementById('cloud-sync-badge');
+        if (!badge) return;
+        
+        const okIcon = badge.querySelector('.cloud-ok-icon');
+        const syncIcon = badge.querySelector('.cloud-sync-icon');
+        const offIcon = badge.querySelector('.cloud-off-icon');
+        
+        okIcon.classList.add('hidden');
+        syncIcon.classList.add('hidden');
+        offIcon.classList.add('hidden');
+        
+        if (e.detail.success) {
+            okIcon.classList.remove('hidden');
+            badge.style.color = 'var(--success)';
+            badge.setAttribute('title', 'Nuvem Sincronizada');
+        } else {
+            syncIcon.classList.remove('hidden');
+            badge.style.color = 'var(--warning)';
+            badge.setAttribute('title', 'Erro ao Sincronizar Webhook');
         }
     });
 
@@ -1392,5 +1533,303 @@ function updateAutocompletes() {
     const dlTypes = document.getElementById('types-list');
     if (dlTypes) {
         dlTypes.innerHTML = Array.from(types).map(t => `<option value="${escapeHTML(t)}">`).join('');
+    }
+}
+
+function renderSalesKanban() {
+    const listProposal = document.getElementById('kanban-list-proposal');
+    const listPending = document.getElementById('kanban-list-pending');
+    const listCompleted = document.getElementById('kanban-list-completed');
+    
+    if (!listProposal || !listPending || !listCompleted) return;
+    
+    const proposals = filteredSalesList.filter(s => 
+        (s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) ||
+        (s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === ''))
+    );
+    
+    const pendings = filteredSalesList.filter(s => 
+        !(s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) &&
+        !(s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === '')) &&
+        s.formaPagamento === 'Boleto' && s.status === 'Pendente'
+    );
+    
+    const completed = filteredSalesList.filter(s => 
+        !(s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) &&
+        !(s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === '')) &&
+        !(s.formaPagamento === 'Boleto' && s.status === 'Pendente')
+    );
+    
+    document.getElementById('kanban-count-proposal').textContent = proposals.length;
+    document.getElementById('kanban-count-pending').textContent = pendings.length;
+    document.getElementById('kanban-count-completed').textContent = completed.length;
+    
+    const renderColumnCards = (cards, listEl, type) => {
+        if (cards.length === 0) {
+            listEl.innerHTML = `<div style="text-align:center; padding: 20px; font-style:italic; font-size:0.8rem; color:var(--text-muted);">Nenhum cartão</div>`;
+            return;
+        }
+        listEl.innerHTML = cards.map(sale => {
+            const formattedVal = sale.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const dateStr = new Date(sale.data).toLocaleDateString('pt-BR');
+            
+            let actionsHtml = '';
+            if (type === 'proposal') {
+                actionsHtml = `
+                    <button class="action-btn btn-convert-proposal btn-convert-sale-proposal" data-id="${sale.id}" title="Converter em Venda" style="padding: 5px 8px;">
+                        <i data-lucide="shopping-cart" style="width: 13px; height: 13px;"></i>
+                    </button>
+                `;
+            } else if (type === 'pending') {
+                actionsHtml = `
+                    <button class="action-btn action-btn-success btn-pay-boleto" data-id="${sale.id}" title="Marcar Boleto como Pago" style="padding: 5px 8px;">
+                        <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                    </button>
+                `;
+            }
+            
+            let followupHtml = '';
+            if (sale.formaPagamento === 'Boleto' && sale.status === 'Pendente') {
+                followupHtml = `
+                    <button class="action-btn btn-invoice-followup" data-id="${sale.id}" title="Cobrar via WhatsApp" style="background-color: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2); padding: 5px 8px;">
+                        <i data-lucide="message-square" style="width: 13px; height: 13px;"></i>
+                    </button>
+                `;
+            }
+
+            return `
+                <div class="kanban-card">
+                    <div class="kanban-card-title">${escapeHTML(sale.cliente)}</div>
+                    <div class="kanban-card-meta">
+                        <span><strong>Valor:</strong> ${formattedVal}</span>
+                        <span><strong>Vendedor:</strong> ${escapeHTML(sale.vendedorNome)}</span>
+                        <span><strong>Data:</strong> ${dateStr}</span>
+                        ${sale.proposta ? `<span><strong>Cód:</strong> ${escapeHTML(sale.proposta)}</span>` : ''}
+                        ${sale.numeroNota ? `<span><strong>NF:</strong> ${escapeHTML(sale.numeroNota)}</span>` : ''}
+                    </div>
+                    <div class="kanban-card-actions">
+                        ${followupHtml}
+                        ${actionsHtml}
+                        <button class="action-btn action-btn-danger btn-delete-sale" data-id="${sale.id}" title="Excluir" style="padding: 5px 8px;">
+                            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+    
+    renderColumnCards(proposals, listProposal, 'proposal');
+    renderColumnCards(pendings, listPending, 'pending');
+    renderColumnCards(completed, listCompleted, 'completed');
+    
+    lucide.createIcons();
+    
+    const attachCardEvents = (listEl) => {
+        listEl.querySelectorAll('.btn-convert-sale-proposal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                const sales = getSales();
+                const sale = sales.find(s => s.id === id);
+                if (sale) openConvertProposalModal(sale);
+            });
+        });
+        listEl.querySelectorAll('.btn-pay-boleto').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                const sales = getSales();
+                const sale = sales.find(s => s.id === id);
+                if (!sale) return;
+                
+                const nextBoletoIndex = (sale.boletosPagos || 0) + 1;
+                const total = sale.quantidadeBoletos || 1;
+                let message = nextBoletoIndex === total 
+                    ? `Confirmar pagamento do ÚLTIMO boleto (parcela ${nextBoletoIndex} de ${total})?`
+                    : `Confirmar pagamento do boleto (parcela ${nextBoletoIndex} de ${total})?`;
+                    
+                openConfirmModal('Confirmar Parcela', message, () => {
+                    const result = payNextBoleto(id);
+                    if (result && result.success) {
+                        showToast('Parcela Paga', 'Pagamento confirmado.', 'success');
+                        refreshSalesPage();
+                    }
+                });
+            });
+        });
+        listEl.querySelectorAll('.btn-delete-sale').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                openConfirmModal('Excluir', 'Tem certeza que deseja excluir?', () => {
+                    if (deleteSale(id)) {
+                        showToast('Excluído', 'Registro removido.', 'success');
+                        refreshSalesPage();
+                    }
+                });
+            });
+        });
+        listEl.querySelectorAll('.btn-invoice-followup').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                triggerInvoiceFollowup(id);
+            });
+        });
+    };
+    
+    attachCardEvents(listProposal);
+    attachCardEvents(listPending);
+    attachCardEvents(listCompleted);
+}
+
+function triggerInvoiceFollowup(saleId) {
+    const sales = getSales();
+    const sale = sales.find(s => s.id === saleId);
+    if (!sale) return;
+    
+    const nextBoletoIndex = (sale.boletosPagos || 0) + 1;
+    const total = sale.quantidadeBoletos || 1;
+    const valTotal = sale.valor;
+    const valParcela = valTotal / total;
+    const dataVenc = getBoletoDueDate(sale.vencimentoBoleto, sale.boletosPagos || 0);
+    const formattedDate = new Date(dataVenc + 'T12:00:00').toLocaleDateString('pt-BR');
+    const formattedParcela = valParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    
+    const settings = getSystemSettings();
+    const pixStr = settings.pixKey ? `Chave Pix para pagamento: *${settings.pixKey}*` : 'Favor solicitar a chave Pix de pagamento.';
+    
+    const text = `Olá, *${sale.cliente}*! Relembramos que a parcela de boleto *${nextBoletoIndex} de ${total}* no valor de *${formattedParcela}* tem vencimento em *${formattedDate}*. \n\n${pixStr}\n\nObrigado!`;
+    
+    const encodedText = encodeURIComponent(text);
+    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+    showToast('Assistente de Cobrança', 'Mensagem enviada para o WhatsApp.', 'success');
+}
+
+function renderFinancialCalendar() {
+    const gridContainer = document.getElementById('financial-calendar-grid-container');
+    const monthYearEl = document.getElementById('calendar-month-year');
+    if (!gridContainer || !monthYearEl) return;
+    
+    const sales = getSales();
+    const year = calendarCurrentDate.getFullYear();
+    const month = calendarCurrentDate.getMonth();
+    
+    const monthsNames = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+    monthYearEl.textContent = `${monthsNames[month]} ${year}`;
+    
+    const boletosMap = {};
+    sales.forEach(sale => {
+        if (sale.formaPagamento === 'Boleto' && sale.status === 'Pendente' && sale.vencimentoBoleto) {
+            const qtd = sale.quantidadeBoletos || 1;
+            const pagos = sale.boletosPagos || 0;
+            for (let i = pagos; i < qtd; i++) {
+                const due = getBoletoDueDate(sale.vencimentoBoleto, i);
+                const [dYear, dMonth, dDay] = due.split('-').map(Number);
+                if (dYear === year && (dMonth - 1) === month) {
+                    const valParcela = sale.valor / qtd;
+                    if (!boletosMap[due]) {
+                        boletosMap[due] = { total: 0, list: [] };
+                    }
+                    boletosMap[due].total += valParcela;
+                    boletosMap[due].list.push({ sale, parcela: i + 1, totalParcelas: qtd, valor: valParcela });
+                }
+            }
+        }
+    });
+    
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    
+    let calendarHtml = `
+        <div class="calendar-grid">
+            <div class="calendar-day-header">Dom</div>
+            <div class="calendar-day-header">Seg</div>
+            <div class="calendar-day-header">Ter</div>
+            <div class="calendar-day-header">Qua</div>
+            <div class="calendar-day-header">Qui</div>
+            <div class="calendar-day-header">Sex</div>
+            <div class="calendar-day-header">Sáb</div>
+    `;
+    
+    for (let i = 0; i < firstDayIndex; i++) {
+        calendarHtml += `<div class="calendar-day empty"></div>`;
+    }
+    
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    for (let day = 1; day <= totalDays; day++) {
+        const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = dayStr === todayStr;
+        
+        let valueHtml = '';
+        let hasPending = false;
+        let overdueClass = '';
+        
+        if (boletosMap[dayStr]) {
+            hasPending = true;
+            const totalDue = boletosMap[dayStr].total;
+            valueHtml = `<span class="calendar-day-value" title="${boletosMap[dayStr].list.length} parcelas pendentes">${totalDue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}</span>`;
+            if (dayStr < todayStr) {
+                overdueClass = 'has-overdue';
+            }
+        }
+        
+        calendarHtml += `
+            <div class="calendar-day ${isToday ? 'today' : ''} ${overdueClass}" data-date="${dayStr}" style="cursor:${hasPending ? 'pointer' : 'default'};">
+                <span class="calendar-day-number">${day}</span>
+                ${valueHtml}
+            </div>
+        `;
+    }
+    
+    calendarHtml += `</div>`;
+    gridContainer.innerHTML = calendarHtml;
+    
+    gridContainer.querySelectorAll('.calendar-day').forEach(dayEl => {
+        const date = dayEl.dataset.date;
+        if (date && boletosMap[date]) {
+            dayEl.addEventListener('click', () => {
+                const list = boletosMap[date].list;
+                const listText = list.map(item => 
+                    `- ${escapeHTML(item.sale.cliente)} (Parcela ${item.parcela}/${item.totalParcelas}): ${item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                ).join('\n');
+                alert(`Boletos com vencimento em ${new Date(date + 'T12:00:00').toLocaleDateString('pt-BR')}:\n\n${listText}`);
+            });
+        }
+    });
+}
+
+function populateSystemSettingsInForm() {
+    const settings = getSystemSettings();
+    const elPix = document.getElementById('settings-pix-key');
+    if (elPix) elPix.value = settings.pixKey || '';
+    
+    const elWeb = document.getElementById('settings-webhook-url');
+    if (elWeb) elWeb.value = settings.webhookUrl || '';
+}
+
+function updateCloudBadge() {
+    const badge = document.getElementById('cloud-sync-badge');
+    if (!badge) return;
+    
+    const settings = getSystemSettings();
+    const okIcon = badge.querySelector('.cloud-ok-icon');
+    const syncIcon = badge.querySelector('.cloud-sync-icon');
+    const offIcon = badge.querySelector('.cloud-off-icon');
+    
+    okIcon.classList.add('hidden');
+    syncIcon.classList.add('hidden');
+    offIcon.classList.add('hidden');
+    
+    if (settings.webhookUrl) {
+        okIcon.classList.remove('hidden');
+        badge.style.color = 'var(--success)';
+        badge.setAttribute('title', 'Nuvem Ativada (Sincronizado)');
+    } else {
+        offIcon.classList.remove('hidden');
+        badge.style.color = 'var(--text-muted)';
+        badge.setAttribute('title', 'Backup em Nuvem Desativado');
     }
 }

@@ -39,23 +39,54 @@ export function clearSession() {
  * Salva o banco de dados criptografado no localStorage e cria um backup automático
  */
 export function saveDatabase() {
-    if (!sessionPassword || !currentDatabase) {
-        throw new Error('Sessão inválida. Não foi possível salvar os dados.');
-    }
+    if (!currentDatabase || !sessionPassword) return false;
 
     try {
-        const jsonStr = JSON.stringify(currentDatabase);
-        // Criptografia AES-256 dos dados
-        const encrypted = CryptoJS.AES.encrypt(jsonStr, sessionPassword).toString();
+        const plainJsonStr = JSON.stringify(currentDatabase);
+        
+        // Criptografia AES-256 (requisito RNF02)
+        const encrypted = CryptoJS.AES.encrypt(plainJsonStr, sessionPassword).toString();
+        
+        // Salva nas duas partições (Banco e Espelho de Segurança - RNF06)
         localStorage.setItem(STORAGE_KEY_DB, encrypted);
         
         // Backup automático (RNF05)
         localStorage.setItem(STORAGE_KEY_BACKUP, encrypted);
+
+        // Dispara backup em nuvem assíncrono se houver webhook
+        triggerWebhookBackup();
         return true;
     } catch (error) {
         console.error('Erro ao salvar banco de dados:', error);
         return false;
     }
+}
+
+function triggerWebhookBackup() {
+    if (!currentDatabase || !currentDatabase.systemSettings || !currentDatabase.systemSettings.webhookUrl) return;
+    const url = currentDatabase.systemSettings.webhookUrl.trim();
+    if (!url) return;
+    
+    const encryptedData = localStorage.getItem(STORAGE_KEY_DB);
+    if (!encryptedData) return;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            backup: encryptedData
+        })
+    }).then(res => {
+        console.log('Backup em webhook disparado com status:', res.status);
+        // Dispara um evento customizado na janela para atualizar o status visual da nuvem
+        window.dispatchEvent(new CustomEvent('webhook-backup-status', { detail: { success: res.ok } }));
+    }).catch(err => {
+        console.error('Falha ao enviar backup para webhook:', err);
+        window.dispatchEvent(new CustomEvent('webhook-backup-status', { detail: { success: false } }));
+    });
 }
 
 /**
@@ -90,6 +121,9 @@ export function loadDatabase() {
         if (!currentDatabase.paymentMethods) {
             currentDatabase.paymentMethods = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
         }
+        if (!currentDatabase.systemSettings) {
+            currentDatabase.systemSettings = { pixKey: '', webhookUrl: '' };
+        }
         return true;
     } catch (error) {
         console.error('Falha ao descriptografar banco de dados:', error);
@@ -103,14 +137,15 @@ export function loadDatabase() {
 function initializeNewDatabase() {
     currentDatabase = {
         sellers: [
-            { id: 'sel_joao', name: 'João', email: 'joao@vendasmonitor.com', phone: '(11) 98111-2233', status: 'Ativo' },
-            { id: 'sel_maria', name: 'Maria', email: 'maria@vendasmonitor.com', phone: '(11) 98222-3344', status: 'Ativo' },
-            { id: 'sel_pedro', name: 'Pedro', email: 'pedro@vendasmonitor.com', phone: '(21) 98333-4455', status: 'Ativo' },
-            { id: 'sel_ana', name: 'Ana', email: 'ana@vendasmonitor.com', phone: '(11) 98444-5566', status: 'Ativo' }
+            { id: 'sel_joao', name: 'João', email: 'joao@vendasmonitor.com', phone: '(11) 98111-2233', status: 'Ativo', goal: 5000 },
+            { id: 'sel_maria', name: 'Maria', email: 'maria@vendasmonitor.com', phone: '(11) 98222-3344', status: 'Ativo', goal: 5000 },
+            { id: 'sel_pedro', name: 'Pedro', email: 'pedro@vendasmonitor.com', phone: '(21) 98333-4455', status: 'Ativo', goal: 5000 },
+            { id: 'sel_ana', name: 'Ana', email: 'ana@vendasmonitor.com', phone: '(11) 98444-5566', status: 'Ativo', goal: 5000 }
         ],
         sales: [],
         proposals: [],
-        paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto']
+        paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'],
+        systemSettings: { pixKey: '', webhookUrl: '' }
     };
 
     // Salva o banco inicial zerado
@@ -121,17 +156,23 @@ function initializeNewDatabase() {
  * Retorna a lista de vendedores
  */
 export function getSellers() {
-    return currentDatabase ? [...currentDatabase.sellers] : [];
+    if (!currentDatabase) return [];
+    currentDatabase.sellers.forEach(s => {
+        if (s.goal === undefined || s.goal === null) {
+            s.goal = 5000;
+        }
+    });
+    return [...currentDatabase.sellers];
 }
 
 /**
  * Adiciona um novo vendedor
  */
-export function addSeller(name, email, phone, status) {
+export function addSeller(name, email, phone, status, goal = 5000) {
     if (!currentDatabase) return null;
 
     const id = 'sel_' + Date.now();
-    const newSeller = { id, name, email, phone, status };
+    const newSeller = { id, name, email, phone, status, goal: parseFloat(goal) || 5000 };
     
     currentDatabase.sellers.push(newSeller);
     saveDatabase();
@@ -141,13 +182,13 @@ export function addSeller(name, email, phone, status) {
 /**
  * Atualiza um vendedor existente
  */
-export function updateSeller(id, name, email, phone, status) {
+export function updateSeller(id, name, email, phone, status, goal = 5000) {
     if (!currentDatabase) return false;
 
     const idx = currentDatabase.sellers.findIndex(s => s.id === id);
     if (idx === -1) return false;
 
-    currentDatabase.sellers[idx] = { id, name, email, phone, status };
+    currentDatabase.sellers[idx] = { id, name, email, phone, status, goal: parseFloat(goal) || 5000 };
     
     // Atualiza também o nome nas vendas caso tenha mudado
     currentDatabase.sales.forEach(sale => {
@@ -408,4 +449,29 @@ export function deletePaymentMethod(name) {
         return true;
     }
     return false;
+}
+
+/**
+ * Retorna as configurações do sistema
+ */
+export function getSystemSettings() {
+    if (!currentDatabase) return { pixKey: '', webhookUrl: '' };
+    if (!currentDatabase.systemSettings) {
+        currentDatabase.systemSettings = { pixKey: '', webhookUrl: '' };
+        saveDatabase();
+    }
+    return { ...currentDatabase.systemSettings };
+}
+
+/**
+ * Atualiza as configurações do sistema
+ */
+export function updateSystemSettings(pixKey, webhookUrl) {
+    if (!currentDatabase) return false;
+    currentDatabase.systemSettings = {
+        pixKey: pixKey ? pixKey.trim() : '',
+        webhookUrl: webhookUrl ? webhookUrl.trim() : ''
+    };
+    saveDatabase();
+    return true;
 }

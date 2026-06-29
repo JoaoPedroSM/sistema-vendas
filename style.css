@@ -1747,4 +1747,187 @@ input, select, textarea, button {
     border-color: #10b981;
 }
 
+/* --- COMPONENT: KANBAN BOARD --- */
+.kanban-board {
+    margin-top: 20px;
+}
+.kanban-column {
+    background-color: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 420px;
+    transition: all var(--transition-normal) ease;
+}
+.kanban-column:hover {
+    background-color: rgba(255, 255, 255, 0.015);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+.kanban-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: grab;
+    transition: all var(--transition-fast) ease;
+}
+.kanban-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.kanban-card-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #ffffff;
+}
+.kanban-card-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.kanban-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+/* --- COMPONENT: FINANCIAL CALENDAR --- */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    text-align: center;
+}
+.calendar-day-header {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    padding-bottom: 6px;
+}
+.calendar-day {
+    aspect-ratio: 1.2;
+    background-color: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    transition: all var(--transition-fast) ease;
+    min-height: 70px;
+}
+.calendar-day:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+.calendar-day-number {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+.calendar-day.today .calendar-day-number {
+    color: var(--info);
+    background: rgba(14, 165, 233, 0.15);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+.calendar-day-value {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--warning);
+    align-self: flex-end;
+    white-space: nowrap;
+}
+.calendar-day.has-overdue {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(239, 68, 68, 0.01);
+}
+.calendar-day.has-overdue .calendar-day-value {
+    color: #f87171;
+}
+.calendar-day.empty {
+    opacity: 0.25;
+    background: none;
+    border-style: dashed;
+}
+
+/* --- COMPONENT: SELLERS GOALS PROGRESS --- */
+.seller-goal-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    transition: all var(--transition-fast) ease;
+}
+.seller-goal-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+.seller-goal-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.88rem;
+}
+.seller-goal-name {
+    font-weight: 700;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.seller-goal-values {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+.seller-goal-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+.seller-goal-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--info), var(--success));
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.seller-goal-bar-fill.goal-reached {
+    background: linear-gradient(90deg, var(--success), #10b981);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+/* Animação de pulsação para sincronização */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
 
