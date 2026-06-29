@@ -290,17 +290,26 @@
                                 <i data-lucide="sliders" style="color: var(--primary); width: 20px; height: 20px;"></i>
                                 <h3 style="font-size: 0.95rem; font-weight: 600; margin: 0; color: #fff;">Visualização dos Gráficos</h3>
                             </div>
-                            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
-                                    <input type="checkbox" id="chk-chart-temporal" checked style="accent-color: var(--primary); cursor: pointer;">
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    <span class="switch">
+                                        <input type="checkbox" id="chk-chart-temporal" checked>
+                                        <span class="slider"></span>
+                                    </span>
                                     Acompanhamento Temporal
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
-                                    <input type="checkbox" id="chk-chart-vendedores" checked style="accent-color: var(--primary); cursor: pointer;">
+                                <label style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    <span class="switch">
+                                        <input type="checkbox" id="chk-chart-vendedores" checked>
+                                        <span class="slider"></span>
+                                    </span>
                                     Vendas por Vendedor
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
-                                    <input type="checkbox" id="chk-chart-anual" checked style="accent-color: var(--primary); cursor: pointer;">
+                                <label style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    <span class="switch">
+                                        <input type="checkbox" id="chk-chart-anual" checked>
+                                        <span class="slider"></span>
+                                    </span>
                                     Faturamento por Ano
                                 </label>
                             </div>
