@@ -204,6 +204,13 @@
                     <h1 id="page-title" class="page-title">Dashboard</h1>
                 </div>
                 <div class="header-right">
+                    <!-- Status Sincronização Webhook Backup -->
+                    <div id="cloud-sync-badge" class="cloud-sync-badge" title="Backup em Nuvem Desativado">
+                        <i data-lucide="cloud-off" class="cloud-off-icon" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="cloud-lightning" class="cloud-sync-icon hidden" style="width: 18px; height: 18px; color: var(--warning); animation: pulse 1.5s infinite;"></i>
+                        <i data-lucide="cloud" class="cloud-ok-icon hidden" style="width: 18px; height: 18px; color: var(--success);"></i>
+                    </div>
+
                     <!-- Data Atual -->
                     <div class="current-date-badge">
                         <i data-lucide="calendar"></i>
@@ -298,6 +305,17 @@
                             <div class="chart-container">
                                 <canvas id="chart-vendedor"></canvas>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Metas de Faturamento por Vendedor (Gamificação) -->
+                    <div class="dashboard-card margin-top-lg">
+                        <div class="card-header">
+                            <h2>Progresso das Metas Mensais de Vendas 🏆</h2>
+                            <p class="card-subtitle">Faturamento consolidado em relação à meta mensal individual de cada vendedor</p>
+                        </div>
+                        <div id="sellers-goals-container" style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                            <!-- Preenchido dinamicamente com barras de progresso -->
                         </div>
                     </div>
 
@@ -464,8 +482,12 @@
 
                         <!-- Painel Principal: Histórico de Vendas -->
                         <div class="dashboard-card table-panel">
-                            <div class="card-header">
+                            <div class="card-header flex-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <h2>Histórico de Vendas</h2>
+                                <div class="view-toggle-buttons" style="display: flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 4px; border-radius: var(--border-radius-sm);">
+                                    <button id="btn-view-table" class="btn btn-secondary btn-xs active" style="padding: 6px 12px; font-weight: 600;" type="button">Tabela</button>
+                                    <button id="btn-view-kanban" class="btn btn-secondary btn-xs" style="padding: 6px 12px; font-weight: 600;" type="button">Funil Kanban</button>
+                                </div>
                             </div>
                             
                             <!-- Barra de Filtros -->
@@ -533,6 +555,31 @@
                                     <button class="btn btn-secondary btn-xs" id="btn-page-next"><i data-lucide="chevron-right"></i></button>
                                 </div>
                             </div>
+
+                            <!-- Quadro Kanban Comercial (Oculto por padrão) -->
+                            <div id="sales-kanban-board" class="kanban-board hidden" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                                <div class="kanban-column" id="kanban-col-proposal" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 400px;">
+                                    <div class="kanban-column-header" style="font-weight: 700; font-size: 0.95rem; color: var(--info); border-bottom: 2px solid var(--info); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Propostas / Orçamentos</span>
+                                        <span class="badge badge-info" id="kanban-count-proposal">0</span>
+                                    </div>
+                                    <div class="kanban-cards-list" id="kanban-list-proposal" style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; max-height: 500px;"></div>
+                                </div>
+                                <div class="kanban-column" id="kanban-col-pending" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 400px;">
+                                    <div class="kanban-column-header" style="font-weight: 700; font-size: 0.95rem; color: var(--warning); border-bottom: 2px solid var(--warning); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Boletos Pendentes</span>
+                                        <span class="badge badge-warning" id="kanban-count-pending">0</span>
+                                    </div>
+                                    <div class="kanban-cards-list" id="kanban-list-pending" style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; max-height: 500px;"></div>
+                                </div>
+                                <div class="kanban-column" id="kanban-col-completed" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 400px;">
+                                    <div class="kanban-column-header" style="font-weight: 700; font-size: 0.95rem; color: var(--success); border-bottom: 2px solid var(--success); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Concluídas / Pagas</span>
+                                        <span class="badge badge-success" id="kanban-count-completed">0</span>
+                                    </div>
+                                    <div class="kanban-cards-list" id="kanban-list-completed" style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; max-height: 500px;"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -578,6 +625,13 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="input-group">
+                                    <label for="seller-goal">Meta de Vendas Mensal (R$) <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="dollar-sign" class="input-icon"></i>
+                                        <input type="number" id="seller-goal" min="0" step="0.01" value="5000.00" required>
+                                    </div>
+                                </div>
                                 <div class="flex-buttons-row">
                                     <button type="submit" class="btn btn-primary flex-grow">
                                         <span id="btn-seller-submit-text">Cadastrar Vendedor</span>
@@ -602,6 +656,7 @@
                                             <th>Nome</th>
                                             <th>E-mail</th>
                                             <th>Telefone</th>
+                                            <th>Meta Mensal</th>
                                             <th>Vendas Realizadas</th>
                                             <th>Total Faturado</th>
                                             <th>Status</th>
@@ -697,6 +752,34 @@
                             </div>
                         </div>
 
+                        <!-- Painel: Configurações Gerais de Cobrança e Integração -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2>Configurações do Sistema & Integração</h2>
+                                <p class="card-subtitle">Defina a chave Pix de recebimento e conecte backups automáticos via Webhook</p>
+                            </div>
+                            <form id="system-settings-form" style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px;">
+                                <div class="input-group">
+                                    <label for="settings-pix-key">Chave Pix Padrão (para Cobranças)</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="key" class="input-icon"></i>
+                                        <input type="text" id="settings-pix-key" placeholder="Ex: email@empresa.com ou celular">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="settings-webhook-url">URL de Webhook (Backup Automático)</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="link" class="input-icon"></i>
+                                        <input type="url" id="settings-webhook-url" placeholder="https://api.seudominio.com/backup">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <span>Salvar Configurações</span>
+                                    <i data-lucide="save"></i>
+                                </button>
+                            </form>
+                        </div>
+
                         <!-- Painel: Gerenciar Formas de Pagamento -->
                         <div class="dashboard-card">
                             <div class="card-header">
@@ -747,6 +830,24 @@
                                         <!-- Preenchido dinamicamente -->
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Calendário Financeiro de Contas a Receber -->
+                        <div class="dashboard-card col-span-2 select-print-section" style="margin-top: 24px;">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+                                <div>
+                                    <h2>Calendário Financeiro (Contas a Receber) 📅</h2>
+                                    <p class="card-subtitle">Monitore os vencimentos futuros de Boletos e planeje seu caixa</p>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button id="btn-calendar-prev" class="btn btn-secondary btn-xs" type="button"><i data-lucide="chevron-left" style="width:14px;height:14px;"></i></button>
+                                    <span id="calendar-month-year" style="font-weight: 700; min-width: 120px; text-align: center; font-size: 0.95rem; color: #fff;">Junho 2026</span>
+                                    <button id="btn-calendar-next" class="btn btn-secondary btn-xs" type="button"><i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>
+                                </div>
+                            </div>
+                            <div id="financial-calendar-grid-container" style="margin-top: 16px;">
+                                <!-- Preenchido dinamicamente com a grade de calendário -->
                             </div>
                         </div>
 
