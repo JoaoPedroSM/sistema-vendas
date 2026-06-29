@@ -332,43 +332,7 @@ function refreshDashboard() {
     // Atualiza gráficos (apenas vendas)
     updateCharts(completedSales, sellers);
 
-    // Metas de Faturamento (Gamificação)
-    const goalsContainer = document.getElementById('sellers-goals-container');
-    if (goalsContainer) {
-        if (sellers.length === 0) {
-            goalsContainer.innerHTML = `<p class="text-muted text-center" style="font-style:italic; padding: 10px;">Nenhum vendedor cadastrado.</p>`;
-        } else {
-            goalsContainer.innerHTML = sellers.map(seller => {
-                const sellerSales = completedSales.filter(s => s.vendedorId === seller.id);
-                const totalFaturado = sellerSales.reduce((sum, s) => sum + s.valor, 0);
-                const goalVal = seller.goal || 5000;
-                const pct = Math.min(100, Math.round((totalFaturado / goalVal) * 100));
-                const isReached = totalFaturado >= goalVal;
-                
-                return `
-                    <div class="seller-goal-row">
-                        <div class="seller-goal-info">
-                            <span class="seller-goal-name">
-                                <i data-lucide="user" style="width: 14px; height: 14px;"></i>
-                                ${escapeHTML(seller.name)}
-                                ${isReached ? '<span style="color:var(--success); font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:2px; margin-left: 6px;"><i data-lucide="award" style="width:12px;height:12px;"></i>Meta Batida! 🏆</span>' : ''}
-                            </span>
-                            <span class="seller-goal-values">
-                                <strong>${totalFaturado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> / ${goalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (${pct}%)
-                            </span>
-                        </div>
-                        <div class="seller-goal-bar-bg">
-                            <div class="seller-goal-bar-fill ${isReached ? 'goal-reached' : ''}" style="width: ${pct}%;"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
-    }
+
 
     // Tabela de Vendas Recentes (últimas 5)
     const recentSales = sales.slice(0, 5);
@@ -549,9 +513,7 @@ function renderSalesTable() {
                         <button class="action-btn action-btn-success btn-pay-boleto" data-id="${sale.id}" title="Marcar Boleto como Pago">
                             <i data-lucide="check"></i>
                         </button>
-                        <button class="action-btn btn-invoice-followup" data-id="${sale.id}" title="Cobrar via WhatsApp" style="background-color: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2);">
-                            <i data-lucide="message-square"></i>
-                        </button>
+
                     ` : ''}
                     ${((sale.tipo && (sale.tipo.toLowerCase() === 'proposta' || sale.tipo.toLowerCase() === 'orçamento' || sale.tipo.toLowerCase() === 'orcamento')) || (sale.proposta && (!sale.numeroNota || sale.numeroNota === '-' || sale.numeroNota.trim() === ''))) ? `
                         <button class="action-btn btn-convert-proposal btn-convert-sale-proposal" data-id="${sale.id}" title="Transformar Proposta em Venda">
@@ -606,13 +568,7 @@ function renderSalesTable() {
         });
     });
 
-    // Atribui cliques de cobrança via WhatsApp
-    tbody.querySelectorAll('.btn-invoice-followup').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            triggerInvoiceFollowup(id);
-        });
-    });
+
 
     // Atribui cliques de exclusão
     tbody.querySelectorAll('.btn-delete-sale').forEach(btn => {
@@ -674,7 +630,7 @@ function refreshSellersPage() {
                 <td style="font-weight: 600;">${escapeHTML(seller.name)}</td>
                 <td>${escapeHTML(seller.email)}</td>
                 <td>${escapeHTML(seller.phone || '-')}</td>
-                <td class="money-cell" style="font-weight: 600; color: var(--text-secondary);">${goalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+
                 <td style="font-weight: 600; text-align: center;">${count}</td>
                 <td class="money-cell" style="font-weight: 700; color: var(--success);">${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                 <td><span class="badge ${statusBadgeClass}">${escapeHTML(seller.status)}</span></td>
@@ -710,8 +666,7 @@ function refreshSellersPage() {
                 if (elPhone) elPhone.value = seller.phone;
                 const elStatus = document.getElementById('seller-status');
                 if (elStatus) elStatus.value = seller.status;
-                const elGoal = document.getElementById('seller-goal');
-                if (elGoal) elGoal.value = seller.goal || 5000;
+
                 
                 const elTitle = document.getElementById('title-form-vendedor');
                 if (elTitle) elTitle.textContent = 'Editar Vendedor';
@@ -767,8 +722,7 @@ function resetSellerForm() {
     const btnCancelEditSeller = document.getElementById('btn-cancel-edit-seller');
     if (btnCancelEditSeller) btnCancelEditSeller.classList.add('hidden');
 
-    const elGoal = document.getElementById('seller-goal');
-    if (elGoal) elGoal.value = '5000.00';
+
 }
 
 /**
@@ -1596,14 +1550,7 @@ function renderSalesKanban() {
                 `;
             }
             
-            let followupHtml = '';
-            if (sale.formaPagamento === 'Boleto' && sale.status === 'Pendente') {
-                followupHtml = `
-                    <button class="action-btn btn-invoice-followup" data-id="${sale.id}" title="Cobrar via WhatsApp" style="background-color: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2); padding: 5px 8px;">
-                        <i data-lucide="message-square" style="width: 13px; height: 13px;"></i>
-                    </button>
-                `;
-            }
+
 
             return `
                 <div class="kanban-card">
@@ -1616,7 +1563,7 @@ function renderSalesKanban() {
                         ${sale.numeroNota ? `<span><strong>NF:</strong> ${escapeHTML(sale.numeroNota)}</span>` : ''}
                     </div>
                     <div class="kanban-card-actions">
-                        ${followupHtml}
+
                         ${actionsHtml}
                         <button class="action-btn action-btn-danger btn-delete-sale" data-id="${sale.id}" title="Excluir" style="padding: 5px 8px;">
                             <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
@@ -1675,12 +1622,7 @@ function renderSalesKanban() {
                 });
             });
         });
-        listEl.querySelectorAll('.btn-invoice-followup').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.dataset.id;
-                triggerInvoiceFollowup(id);
-            });
-        });
+
     };
     
     attachCardEvents(listProposal);
@@ -1688,28 +1630,7 @@ function renderSalesKanban() {
     attachCardEvents(listCompleted);
 }
 
-function triggerInvoiceFollowup(saleId) {
-    const sales = getSales();
-    const sale = sales.find(s => s.id === saleId);
-    if (!sale) return;
-    
-    const nextBoletoIndex = (sale.boletosPagos || 0) + 1;
-    const total = sale.quantidadeBoletos || 1;
-    const valTotal = sale.valor;
-    const valParcela = valTotal / total;
-    const dataVenc = getBoletoDueDate(sale.vencimentoBoleto, sale.boletosPagos || 0);
-    const formattedDate = new Date(dataVenc + 'T12:00:00').toLocaleDateString('pt-BR');
-    const formattedParcela = valParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    
-    const settings = getSystemSettings();
-    const pixStr = settings.pixKey ? `Chave Pix para pagamento: *${settings.pixKey}*` : 'Favor solicitar a chave Pix de pagamento.';
-    
-    const text = `Olá, *${sale.cliente}*! Relembramos que a parcela de boleto *${nextBoletoIndex} de ${total}* no valor de *${formattedParcela}* tem vencimento em *${formattedDate}*. \n\n${pixStr}\n\nObrigado!`;
-    
-    const encodedText = encodeURIComponent(text);
-    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
-    showToast('Assistente de Cobrança', 'Mensagem enviada para o WhatsApp.', 'success');
-}
+
 
 function renderFinancialCalendar() {
     const gridContainer = document.getElementById('financial-calendar-grid-container');
