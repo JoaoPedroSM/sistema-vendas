@@ -380,7 +380,7 @@ export function importBackup(encryptedJsonStr, testPassword) {
 /**
  * Converte um registro existente do tipo Proposta em Venda
  */
-export function convertExistingProposalToSale(saleId, saleNota, finalPagamento, quantidadeBoletos = 1, vencimentoBoleto = null) {
+export function convertExistingProposalToSale(saleId, saleNota, finalPagamento, quantidadeBoletos = 1, vencimentoBoleto = null, valor2 = null) {
     if (!currentDatabase || !currentDatabase.sales) return null;
     
     const sale = currentDatabase.sales.find(s => s.id === saleId);
@@ -390,6 +390,7 @@ export function convertExistingProposalToSale(saleId, saleNota, finalPagamento, 
     sale.formaPagamento = finalPagamento;
     sale.tipo = 'Venda'; // Transforma em Venda!
     sale.data = new Date().toISOString(); // Atualiza a data da venda para hoje
+    sale.valor2 = valor2 ? parseFloat(valor2) : null;
 
     if (finalPagamento === 'Boleto') {
         sale.quantidadeBoletos = parseInt(quantidadeBoletos);
