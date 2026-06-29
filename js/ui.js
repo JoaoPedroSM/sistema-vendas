@@ -1227,6 +1227,65 @@ export function bindUIEvents() {
         document.getElementById('btn-chart-periodo-bar').classList.add('active');
     });
 
+    // --- CONTROLES DE VISIBILIDADE DOS GRÁFICOS ---
+    const chkTemporal = document.getElementById('chk-chart-temporal');
+    const chkVendedores = document.getElementById('chk-chart-vendedores');
+    const chkAnual = document.getElementById('chk-chart-anual');
+
+    const cardTemporal = document.getElementById('card-chart-periodo');
+    const cardVendedores = document.getElementById('card-chart-vendedor');
+    const cardAnual = document.getElementById('card-chart-mensal');
+
+    const loadPreference = (key, checkbox, card) => {
+        const value = localStorage.getItem(key);
+        if (value === 'false') {
+            checkbox.checked = false;
+            card.classList.add('hidden');
+        } else {
+            checkbox.checked = true;
+            card.classList.remove('hidden');
+        }
+    };
+
+    if (chkTemporal && cardTemporal) {
+        loadPreference('pref-chart-temporal', chkTemporal, cardTemporal);
+        chkTemporal.addEventListener('change', () => {
+            if (chkTemporal.checked) {
+                cardTemporal.classList.remove('hidden');
+                localStorage.setItem('pref-chart-temporal', 'true');
+            } else {
+                cardTemporal.classList.add('hidden');
+                localStorage.setItem('pref-chart-temporal', 'false');
+            }
+        });
+    }
+
+    if (chkVendedores && cardVendedores) {
+        loadPreference('pref-chart-vendedores', chkVendedores, cardVendedores);
+        chkVendedores.addEventListener('change', () => {
+            if (chkVendedores.checked) {
+                cardVendedores.classList.remove('hidden');
+                localStorage.setItem('pref-chart-vendedores', 'true');
+            } else {
+                cardVendedores.classList.add('hidden');
+                localStorage.setItem('pref-chart-vendedores', 'false');
+            }
+        });
+    }
+
+    if (chkAnual && cardAnual) {
+        loadPreference('pref-chart-anual', chkAnual, cardAnual);
+        chkAnual.addEventListener('change', () => {
+            if (chkAnual.checked) {
+                cardAnual.classList.remove('hidden');
+                localStorage.setItem('pref-chart-anual', 'true');
+            } else {
+                cardAnual.classList.add('hidden');
+                localStorage.setItem('pref-chart-anual', 'false');
+            }
+        });
+    }
+
     // Fecha o menu lateral móvel ao clicar fora dele
     document.addEventListener('click', (e) => {
         const sidebar = document.querySelector('.sidebar');
