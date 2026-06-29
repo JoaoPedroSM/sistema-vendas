@@ -230,36 +230,31 @@ export function updateCharts(sales, sellers) {
         }
     });
 
-    // --- GRÁFICO 3: FATURAMENTO MENSAL COMPARATIVO ---
+    // --- GRÁFICO 3: FATURAMENTO ANUAL COMPARATIVO ---
     const ctxMensal = document.getElementById('chart-mensal');
     if (ctxMensal) {
         if (chartMensalInstance) {
             chartMensalInstance.destroy();
         }
 
-        const monthlySalesData = {};
+        const annualSalesData = {};
         
-        // Agrupa as vendas finalizadas por ano-mês
+        // Agrupa as vendas finalizadas por ano
         sales.forEach(sale => {
             const date = new Date(sale.data);
             const year = date.getFullYear();
-            const month = date.getMonth();
             
-            const monthNamesShort = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-            const label = `${monthNamesShort[month]}/${String(year).substring(2)}`;
-            const sortKey = `${year}-${String(month).padStart(2, '0')}`;
-            
-            if (!monthlySalesData[sortKey]) {
-                monthlySalesData[sortKey] = { label, total: 0 };
+            if (!annualSalesData[year]) {
+                annualSalesData[year] = { label: String(year), total: 0 };
             }
-            monthlySalesData[sortKey].total += sale.valor;
+            annualSalesData[year].total += sale.valor;
         });
 
-        const sortedMonths = Object.entries(monthlySalesData)
+        const sortedYears = Object.entries(annualSalesData)
             .sort((a, b) => a[0].localeCompare(b[0]));
 
-        const monthlyLabels = sortedMonths.map(item => item[1].label);
-        const monthlyTotals = sortedMonths.map(item => item[1].total);
+        const annualLabels = sortedYears.map(item => item[1].label);
+        const annualTotals = sortedYears.map(item => item[1].total);
 
         const canvasMensalCtx = ctxMensal.getContext('2d');
         const gradMensal = canvasMensalCtx.createLinearGradient(0, 0, 0, 300);
@@ -270,10 +265,10 @@ export function updateCharts(sales, sellers) {
         chartMensalInstance = new Chart(ctxMensal, {
             type: 'bar',
             data: {
-                labels: monthlyLabels.length > 0 ? monthlyLabels : ['Nenhum dado'],
+                labels: annualLabels.length > 0 ? annualLabels : ['Nenhum dado'],
                 datasets: [{
-                    label: 'Faturamento Mensal',
-                    data: monthlyTotals.length > 0 ? monthlyTotals : [0],
+                    label: 'Faturamento Anual',
+                    data: annualTotals.length > 0 ? annualTotals : [0],
                     backgroundColor: gradMensal,
                     borderColor: colors.accentGradientStart.replace('0.8', '1'),
                     borderWidth: 1.5,
