@@ -7,6 +7,7 @@
 
 let chartVendedoresInstance = null;
 let chartPeriodoInstance = null;
+let chartMensalInstance = null;
 
 /**
  * Obtém as cores de acordo com o tema ativo
@@ -218,4 +219,95 @@ export function updateCharts(sales, sellers) {
             }
         }
     });
+
+    // --- GRÁFICO 3: FATURAMENTO MENSAL COMPARATIVO ---
+    const ctxMensal = document.getElementById('chart-mensal');
+    if (ctxMensal) {
+        if (chartMensalInstance) {
+            chartMensalInstance.destroy();
+        }
+
+        const monthlySalesData = {};
+        
+        // Agrupa as vendas finalizadas por ano-mês
+        sales.forEach(sale => {
+            const date = new Date(sale.data);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            
+            const monthNamesShort = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+            const label = `${monthNamesShort[month]}/${String(year).substring(2)}`;
+            const sortKey = `${year}-${String(month).padStart(2, '0')}`;
+            
+            if (!monthlySalesData[sortKey]) {
+                monthlySalesData[sortKey] = { label, total: 0 };
+            }
+            monthlySalesData[sortKey].total += sale.valor;
+        });
+
+        const sortedMonths = Object.entries(monthlySalesData)
+            .sort((a, b) => a[0].localeCompare(b[0]));
+
+        const monthlyLabels = sortedMonths.map(item => item[1].label);
+        const monthlyTotals = sortedMonths.map(item => item[1].total);
+
+        const canvasMensalCtx = ctxMensal.getContext('2d');
+        const gradMensal = canvasMensalCtx.createLinearGradient(0, 0, 0, 300);
+        // Usa as cores do tema correspondentes
+        gradMensal.addColorStop(0, colors.accentGradientStart);
+        gradMensal.addColorStop(1, colors.accentGradientEnd);
+
+        chartMensalInstance = new Chart(ctxMensal, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels.length > 0 ? monthlyLabels : ['Nenhum dado'],
+                datasets: [{
+                    label: 'Faturamento Mensal',
+                    data: monthlyTotals.length > 0 ? monthlyTotals : [0],
+                    backgroundColor: gradMensal,
+                    borderColor: colors.accentGradientStart.replace('0.8', '1'),
+                    borderWidth: 1.5,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: colors.tooltipBg,
+                        titleColor: colors.tooltipText,
+                        bodyColor: colors.tooltipText,
+                        borderColor: colors.tooltipBorder,
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                return `Faturamento: ${total}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: colors.textColor, font: { family: 'Plus Jakarta Sans', weight: 600 } }
+                    },
+                    y: {
+                        grid: { color: colors.gridColor },
+                        ticks: { 
+                            color: colors.textColor,
+                            font: { family: 'Plus Jakarta Sans' },
+                            callback: function(value) {
+                                return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
