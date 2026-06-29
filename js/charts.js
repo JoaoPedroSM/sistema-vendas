@@ -72,23 +72,42 @@ export function updateCharts(sales, sellers) {
     const sellerCounts = sortedSellers.map(item => item[1].count);
     const sellerTotals = sortedSellers.map(item => item[1].total);
 
-    // 2. Processar dados para: Vendas por Período (Últimos 30 dias agrupados por dia)
+    // 2. Processar dados para: Vendas por Período (Apenas dias do mês atual)
     const periodSalesData = {};
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-indexed
     
-    // Obter datas únicas ordenadas cronologicamente
-    sales.forEach(sale => {
-        const date = new Date(sale.data);
-        const dateKey = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        
-        if (!periodSalesData[dateKey]) {
-            periodSalesData[dateKey] = { count: 0, total: 0, rawDate: new Date(date.getFullYear(), date.getMonth(), date.getDate()) };
-        }
-        periodSalesData[dateKey].count += 1;
-        periodSalesData[dateKey].total += sale.valor;
+    // Determina o último dia a exibir (dia atual do mês se for o mês corrente, ou total de dias do mês)
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const maxDayToShow = today.getDate();
+    
+    // Inicializa todos os dias do mês atual até o dia de hoje com 0
+    for (let day = 1; day <= maxDayToShow; day++) {
+        const dateKey = `${String(day).padStart(2, '0')}/${String(currentMonth + 1).padStart(2, '0')}`;
+        periodSalesData[dateKey] = { count: 0, total: 0, dayNumber: day };
+    }
+    
+    // Filtra as vendas para incluir somente as do mês atual
+    const currentMonthSales = sales.filter(sale => {
+        const saleDate = new Date(sale.data);
+        return saleDate.getFullYear() === currentYear && saleDate.getMonth() === currentMonth;
     });
 
+    currentMonthSales.forEach(sale => {
+        const date = new Date(sale.data);
+        const day = date.getDate();
+        const dateKey = `${String(day).padStart(2, '0')}/${String(currentMonth + 1).padStart(2, '0')}`;
+        
+        if (periodSalesData[dateKey]) {
+            periodSalesData[dateKey].count += 1;
+            periodSalesData[dateKey].total += sale.valor;
+        }
+    });
+
+    // Ordena as chaves cronologicamente
     const sortedPeriods = Object.entries(periodSalesData)
-        .sort((a, b) => a[1].rawDate - b[1].rawDate);
+        .sort((a, b) => a[1].dayNumber - b[1].dayNumber);
 
     const periodLabels = sortedPeriods.map(item => item[0]);
     const periodTotals = sortedPeriods.map(item => item[1].total);
