@@ -13,7 +13,7 @@ import {
     getPaymentMethods, addPaymentMethod, deletePaymentMethod,
     getSystemSettings, updateSystemSettings
 } from './db.js';
-import { updateCharts } from './charts.js';
+import { updateCharts, setChartPeriodoType } from './charts.js';
 import { getConsolidatedSellersMetrics, exportToExcel, exportToPDF } from './reports.js';
 
 let activeSalesView = 'table';
@@ -1212,6 +1212,19 @@ export function bindUIEvents() {
             badge.style.color = 'var(--warning)';
             badge.setAttribute('title', 'Erro ao Sincronizar Webhook');
         }
+    });
+
+    // --- ALTERNAR TIPO DE GRÁFICO DE PERÍODO (LINHA VS BARRAS) ---
+    document.getElementById('btn-chart-periodo-line')?.addEventListener('click', () => {
+        setChartPeriodoType('line');
+        document.getElementById('btn-chart-periodo-line').classList.add('active');
+        document.getElementById('btn-chart-periodo-bar').classList.remove('active');
+    });
+
+    document.getElementById('btn-chart-periodo-bar')?.addEventListener('click', () => {
+        setChartPeriodoType('bar');
+        document.getElementById('btn-chart-periodo-line').classList.remove('active');
+        document.getElementById('btn-chart-periodo-bar').classList.add('active');
     });
 
     // Fecha o menu lateral móvel ao clicar fora dele

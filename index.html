@@ -286,10 +286,16 @@
                     <!-- Layout de Gráficos -->
                     <div class="dashboard-grid">
                         <!-- Card do Gráfico de Período -->
-                        <div class="dashboard-card card-chart main-chart-card">
-                            <div class="card-header">
-                                <h2>Acompanhamento Temporal das Vendas</h2>
-                                <span class="badge">Período</span>
+                        <div class="dashboard-card card-chart">
+                            <div class="card-header flex-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h2>Acompanhamento Temporal das Vendas</h2>
+                                    <span class="badge">Período</span>
+                                </div>
+                                <div class="chart-type-toggle" style="display: flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 4px; border-radius: var(--border-radius-sm);">
+                                    <button id="btn-chart-periodo-line" class="btn btn-secondary btn-xs active" style="padding: 4px 8px; font-size: 0.7rem;" type="button">Linha</button>
+                                    <button id="btn-chart-periodo-bar" class="btn btn-secondary btn-xs" style="padding: 4px 8px; font-size: 0.7rem;" type="button">Barras</button>
+                                </div>
                             </div>
                             <div class="chart-container">
                                 <canvas id="chart-periodo"></canvas>
