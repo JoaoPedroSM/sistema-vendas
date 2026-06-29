@@ -1,13 +1,21 @@
-/**
- * Módulo de Visualização Gráfica (charts.js)
- * Gerencia a renderização de gráficos responsivos e interativos via Chart.js
- * Suporta atualização em tempo real, filtros e adaptação ao tema escuro/claro
- * Requisitos: RF12, RF13, RNF02, RNF06
- */
+import { getSales, getSellers } from './db.js';
 
 let chartVendedoresInstance = null;
 let chartPeriodoInstance = null;
 let chartMensalInstance = null;
+let chartPeriodoType = 'line';
+
+export function setChartPeriodoType(type) {
+    chartPeriodoType = type;
+    const sales = getSales();
+    const sellers = getSellers();
+    const completedSales = sales.filter(s => {
+        const isProp = (s.tipo && (s.tipo.toLowerCase() === 'proposta' || s.tipo.toLowerCase() === 'orçamento' || s.tipo.toLowerCase() === 'orcamento')) ||
+                       (s.proposta && (!s.numeroNota || s.numeroNota === '-' || s.numeroNota.trim() === ''));
+        return !isProp;
+    });
+    updateCharts(completedSales, sellers);
+}
 
 /**
  * Obtém as cores de acordo com o tema ativo
@@ -161,22 +169,24 @@ export function updateCharts(sales, sellers) {
     gradPeriodo.addColorStop(1, colors.successGradientEnd);
 
     chartPeriodoInstance = new Chart(ctxPeriodo, {
-        type: 'line',
+        type: chartPeriodoType,
         data: {
             labels: periodLabels,
             datasets: [{
                 label: 'Faturamento Diário',
                 data: periodTotals,
-                fill: true,
+                fill: chartPeriodoType === 'line',
                 backgroundColor: gradPeriodo,
                 borderColor: colors.successGradientStart.replace('0.8', '1'),
-                borderWidth: 3,
+                borderWidth: chartPeriodoType === 'line' ? 3 : 1.5,
+                borderRadius: chartPeriodoType === 'bar' ? 8 : 0,
+                borderSkipped: false,
                 tension: 0.35,
                 pointBackgroundColor: colors.successGradientStart.replace('0.8', '1'),
                 pointBorderColor: colors.tooltipBg,
                 pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7
+                pointRadius: chartPeriodoType === 'line' ? 5 : 0,
+                pointHoverRadius: chartPeriodoType === 'line' ? 7 : 0
             }]
         },
         options: {
