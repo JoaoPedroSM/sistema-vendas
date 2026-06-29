@@ -1276,11 +1276,12 @@ export function bindUIEvents() {
         const finalPagamento = document.getElementById('convert-sale-pagamento').value;
         const quantidadeBoletos = document.getElementById('convert-sale-quantidade-boleto')?.value || '1';
         const vencimentoBoleto = document.getElementById('convert-sale-vencimento')?.value || '';
+        const saleValor = document.getElementById('convert-sale-valor')?.value || '';
         const saleValor2 = document.getElementById('convert-sale-valor2')?.value || '';
 
         try {
             const newSale = convertExistingProposalToSale(
-                proposalId, saleNota, finalPagamento, quantidadeBoletos, vencimentoBoleto, saleValor2
+                proposalId, saleNota, finalPagamento, quantidadeBoletos, vencimentoBoleto, saleValor2, saleValor
             );
             if (newSale) {
                 showToast('Conversão Concluída', `A proposta foi convertida em Venda com sucesso! NF: ${saleNota}`, 'success');
@@ -1356,6 +1357,11 @@ function openConvertProposalModal(proposal) {
     const inputQuantidade = document.getElementById('convert-sale-quantidade-boleto');
     if (inputQuantidade) {
         inputQuantidade.value = proposal.quantidadeBoletos || '1';
+    }
+
+    const inputValor = document.getElementById('convert-sale-valor');
+    if (inputValor) {
+        inputValor.value = proposal.valor || '';
     }
 
     const inputValor2 = document.getElementById('convert-sale-valor2');
