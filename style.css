@@ -687,6 +687,24 @@ input, select, textarea, button {
     border-color: var(--primary);
 }
 
+.cloud-sync-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--border-color-light);
+    border: 1px solid var(--border-color);
+    cursor: help;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+}
+
+.cloud-sync-badge:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
 .dark-theme .sun-icon { display: block; }
 .dark-theme .moon-icon { display: none; }
 .light-theme .sun-icon { display: none; }

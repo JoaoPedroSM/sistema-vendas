@@ -214,6 +214,7 @@ export function navigateTo(viewId) {
         } else if (viewId === 'relatorios') {
             refreshReportsPage();
         }
+        updateCloudBadge();
     }
     
     // Fecha menu lateral no mobile após navegação
