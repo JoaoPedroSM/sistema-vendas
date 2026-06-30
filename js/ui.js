@@ -2201,16 +2201,16 @@ function renderReceiptsTable() {
     
     listEl.innerHTML = filtered.map(r => `
         <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
-            <td style="padding: 14px 20px; font-weight: 600; color: #fff;">${escapeHTML(r.ref)}</td>
+            <td style="padding: 14px 20px; font-weight: 600; color: #fff;">${escapeHTML(r.ref || '')}</td>
             <td style="padding: 14px 20px;">
-                <span style="padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; text-transform: uppercase; background: ${r.type === 'entrega' ? 'rgba(16, 185, 129, 0.15); color: #10b981;' : 'rgba(245, 158, 11, 0.15); color: #f59e0b;'}">
-                    ${r.type === 'entrega' ? 'Entrega' : 'Devolução'}
+                <span style="padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; text-transform: uppercase; background: ${(r.type || 'entrega') === 'entrega' ? 'rgba(16, 185, 129, 0.15); color: #10b981;' : 'rgba(245, 158, 11, 0.15); color: #f59e0b;'}">
+                    ${(r.type || 'entrega') === 'entrega' ? 'Entrega' : 'Devolução'}
                 </span>
             </td>
-            <td style="padding: 14px 20px;">${escapeHTML(r.client)}</td>
+            <td style="padding: 14px 20px;">${escapeHTML(r.client || '')}</td>
             <td style="padding: 14px 20px; color: var(--text-secondary);">${escapeHTML(r.att || '-')}</td>
-            <td style="padding: 14px 20px; color: var(--text-secondary);">${r.date.split('-').reverse().join('/')} às ${escapeHTML(r.time)}</td>
-            <td style="padding: 14px 20px; font-weight: 700; color: #fff;">${r.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary);">${(r.date || '').split('-').reverse().join('/')} às ${escapeHTML(r.time || '')}</td>
+            <td style="padding: 14px 20px; font-weight: 700; color: #fff;">${(r.grandTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             <td style="padding: 14px 20px; text-align: center;">
                 <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn btn-secondary btn-xs btn-view-cmp" data-id="${r.id}" title="Visualizar / Imprimir" style="padding: 6px;"><i class="ti ti-eye"></i></button>
@@ -2255,8 +2255,8 @@ function viewReceiptDetails(id) {
     const paperContent = document.getElementById('receipt-paper-content');
     if (!paperContent) return;
     
-    const dateFormatted = r.date.split('-').reverse().join('/');
-    const docTitle = r.type === 'entrega' ? 'COMPROVANTE DE ENTREGA' : 'COMPROVANTE DE DEVOLUÇÃO';
+    const dateFormatted = (r.date || '').split('-').reverse().join('/');
+    const docTitle = (r.type || 'entrega') === 'entrega' ? 'COMPROVANTE DE ENTREGA' : 'COMPROVANTE DE DEVOLUÇÃO';
     
     paperContent.innerHTML = `
         <table class="receipt-header-table">
@@ -2276,14 +2276,14 @@ function viewReceiptDetails(id) {
         
         <div class="receipt-grid-2">
             <div>
-                <div class="receipt-field"><strong>Referência / NF:</strong> ${escapeHTML(r.ref)}</div>
-                <div class="receipt-field"><strong>Destinatário:</strong> ${escapeHTML(r.client)}</div>
+                <div class="receipt-field"><strong>Referência / NF:</strong> ${escapeHTML(r.ref || '')}</div>
+                <div class="receipt-field"><strong>Destinatário:</strong> ${escapeHTML(r.client || '')}</div>
                 <div class="receipt-field"><strong>Aos cuidados (ATT):</strong> ${escapeHTML(r.att || 'Geral')}</div>
             </div>
             <div style="text-align: right;">
                 <div class="receipt-field"><strong>Data de Emissão:</strong> ${dateFormatted}</div>
-                <div class="receipt-field"><strong>Hora de Emissão:</strong> ${escapeHTML(r.time)}</div>
-                <div class="receipt-field"><strong>Entregador/Técnico:</strong> ${escapeHTML(r.deliverer)}</div>
+                <div class="receipt-field"><strong>Hora de Emissão:</strong> ${escapeHTML(r.time || '')}</div>
+                <div class="receipt-field"><strong>Entregador/Técnico:</strong> ${escapeHTML(r.deliverer || '')}</div>
             </div>
         </div>
         
@@ -2299,13 +2299,13 @@ function viewReceiptDetails(id) {
                 </tr>
             </thead>
             <tbody>
-                ${r.items.map(item => `
+                ${(r.items || []).map(item => `
                     <tr>
                         <td style="text-align: center;">${item.qty}</td>
-                        <td style="font-weight: 600;">${escapeHTML(item.desc)}</td>
+                        <td style="font-weight: 600;">${escapeHTML(item.desc || '')}</td>
                         <td style="text-align: center; color: #4b5563;">${escapeHTML(item.serial || 'N/A')}</td>
-                        <td style="text-align: right;">${item.valUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td style="text-align: right; font-weight: 700;">${item.valTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="text-align: right;">${(item.valUnit || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="text-align: right; font-weight: 700;">${(item.valTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -2315,12 +2315,12 @@ function viewReceiptDetails(id) {
             <div style="max-width: 60%;">
                 <div class="receipt-field"><strong>Valor por Extenso:</strong></div>
                 <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #374151; background-color: #f3f4f6; padding: 6px 10px; border-radius: 4px; border: 1px dashed #d1d5db;">
-                    ${escapeHTML(r.valExtenso)}
+                    ${escapeHTML(r.valExtenso || '')}
                 </div>
             </div>
             <div style="text-align: right;">
                 <span style="font-size: 11px; color: #4b5563; display: block; margin-bottom: 2px;">Valor Geral Declarado</span>
-                <strong style="font-size: 18px; color: #0066b2; font-family: 'Outfit', sans-serif;">${r.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                <strong style="font-size: 18px; color: #0066b2; font-family: 'Outfit', sans-serif;">${(r.grandTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
             </div>
         </div>
         
@@ -2571,9 +2571,9 @@ function renderEntradasTable() {
             <td style="padding: 14px 20px; font-weight: 600; color: #fff;">${escapeHTML(ent.ref)}</td>
             <td style="padding: 14px 20px;">${escapeHTML(ent.source)}</td>
             <td style="padding: 14px 20px;">${escapeHTML(ent.receiver)}</td>
-            <td style="padding: 14px 20px; color: var(--text-secondary);">${ent.date.split('-').reverse().join('/')} às ${escapeHTML(ent.time)}</td>
-            <td style="padding: 14px 20px; color: var(--text-secondary); font-weight: 600;">${ent.items.reduce((sum, item) => sum + item.qty, 0)} itens</td>
-            <td style="padding: 14px 20px; font-weight: 700; color: #fff;">${ent.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary);">${(ent.date || '').split('-').reverse().join('/')} às ${escapeHTML(ent.time || '')}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary); font-weight: 600;">${(ent.items || []).reduce((sum, item) => sum + item.qty, 0)} itens</td>
+            <td style="padding: 14px 20px; font-weight: 700; color: #fff;">${(ent.grandTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             <td style="padding: 14px 20px; text-align: center;">
                 <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn btn-secondary btn-xs btn-view-ent" data-id="${ent.id}" title="Visualizar / Imprimir" style="padding: 6px;"><i class="ti ti-eye"></i></button>
@@ -2612,7 +2612,7 @@ function viewEntradaDetails(id) {
     const paperContent = document.getElementById('receipt-paper-content');
     if (!paperContent) return;
     
-    const dateFormatted = ent.date.split('-').reverse().join('/');
+    const dateFormatted = (ent.date || '').split('-').reverse().join('/');
     
     paperContent.innerHTML = `
         <table class="receipt-header-table">
@@ -2632,13 +2632,13 @@ function viewEntradaDetails(id) {
         
         <div class="receipt-grid-2">
             <div>
-                <div class="receipt-field"><strong>Ref / NF Entrada:</strong> ${escapeHTML(ent.ref)}</div>
-                <div class="receipt-field"><strong>Fornecedor / Origem:</strong> ${escapeHTML(ent.source)}</div>
+                <div class="receipt-field"><strong>Ref / NF Entrada:</strong> ${escapeHTML(ent.ref || '')}</div>
+                <div class="receipt-field"><strong>Fornecedor / Origem:</strong> ${escapeHTML(ent.source || '')}</div>
             </div>
             <div style="text-align: right;">
                 <div class="receipt-field"><strong>Data de Recebimento:</strong> ${dateFormatted}</div>
-                <div class="receipt-field"><strong>Hora de Recebimento:</strong> ${escapeHTML(ent.time)}</div>
-                <div class="receipt-field"><strong>Recebido por:</strong> ${escapeHTML(ent.receiver)}</div>
+                <div class="receipt-field"><strong>Hora de Recebimento:</strong> ${escapeHTML(ent.time || '')}</div>
+                <div class="receipt-field"><strong>Recebido por:</strong> ${escapeHTML(ent.receiver || '')}</div>
             </div>
         </div>
         
@@ -2654,13 +2654,13 @@ function viewEntradaDetails(id) {
                 </tr>
             </thead>
             <tbody>
-                ${ent.items.map(item => `
+                ${(ent.items || []).map(item => `
                     <tr>
                         <td style="text-align: center;">${item.qty}</td>
-                        <td style="font-weight: 600;">${escapeHTML(item.desc)}</td>
+                        <td style="font-weight: 600;">${escapeHTML(item.desc || '')}</td>
                         <td style="text-align: center; color: #4b5563;">${escapeHTML(item.serial || 'N/A')}</td>
-                        <td style="text-align: right;">${item.valUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td style="text-align: right; font-weight: 700;">${item.valTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="text-align: right;">${(item.valUnit || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="text-align: right; font-weight: 700;">${(item.valTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -2668,7 +2668,7 @@ function viewEntradaDetails(id) {
         
         <div style="text-align: right; margin-top: 16px;">
             <span style="font-size: 11px; color: #4b5563; display: block; margin-bottom: 2px;">Valor Total da Entrada</span>
-            <strong style="font-size: 18px; color: #10b981; font-family: 'Outfit', sans-serif;">${ent.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+            <strong style="font-size: 18px; color: #10b981; font-family: 'Outfit', sans-serif;">${(ent.grandTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
         </div>
         
         ${ent.notes ? `
