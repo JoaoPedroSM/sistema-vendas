@@ -118,6 +118,12 @@ export function loadDatabase() {
         if (!currentDatabase.proposals) {
             currentDatabase.proposals = [];
         }
+        if (!currentDatabase.receipts) {
+            currentDatabase.receipts = [];
+        }
+        if (!currentDatabase.materialInputs) {
+            currentDatabase.materialInputs = [];
+        }
         if (!currentDatabase.paymentMethods) {
             currentDatabase.paymentMethods = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'];
         }
@@ -145,7 +151,9 @@ function initializeNewDatabase() {
         sales: [],
         proposals: [],
         paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto'],
-        systemSettings: { pixKey: '', webhookUrl: '' }
+        systemSettings: { pixKey: '', webhookUrl: '' },
+        receipts: [],
+        materialInputs: []
     };
 
     // Salva o banco inicial zerado
@@ -476,6 +484,82 @@ export function updateSystemSettings(pixKey, webhookUrl) {
         pixKey: pixKey ? pixKey.trim() : '',
         webhookUrl: webhookUrl ? webhookUrl.trim() : ''
     };
+    saveDatabase();
+    return true;
+}
+
+// ==========================================================================
+// COMPROVANTES (RECEIPTS) DATA ACCESS
+// ==========================================================================
+export function getReceipts() {
+    if (!currentDatabase) return [];
+    if (!currentDatabase.receipts) {
+        currentDatabase.receipts = [];
+        saveDatabase();
+    }
+    return currentDatabase.receipts;
+}
+
+export function addReceipt(receipt) {
+    if (!currentDatabase) return null;
+    if (!currentDatabase.receipts) currentDatabase.receipts = [];
+    currentDatabase.receipts.push(receipt);
+    saveDatabase();
+    return receipt;
+}
+
+export function deleteReceipt(id) {
+    if (!currentDatabase || !currentDatabase.receipts) return false;
+    const lengthBefore = currentDatabase.receipts.length;
+    currentDatabase.receipts = currentDatabase.receipts.filter(r => r.id !== id);
+    if (currentDatabase.receipts.length < lengthBefore) {
+        saveDatabase();
+        return true;
+    }
+    return false;
+}
+
+export function saveReceipts(list) {
+    if (!currentDatabase) return false;
+    currentDatabase.receipts = list || [];
+    saveDatabase();
+    return true;
+}
+
+// ==========================================================================
+// ENTRADAS DE MATERIAL (MATERIAL INPUTS) DATA ACCESS
+// ==========================================================================
+export function getMaterialInputs() {
+    if (!currentDatabase) return [];
+    if (!currentDatabase.materialInputs) {
+        currentDatabase.materialInputs = [];
+        saveDatabase();
+    }
+    return currentDatabase.materialInputs;
+}
+
+export function addMaterialInput(materialInput) {
+    if (!currentDatabase) return null;
+    if (!currentDatabase.materialInputs) currentDatabase.materialInputs = [];
+    currentDatabase.materialInputs.push(materialInput);
+    saveDatabase();
+    return materialInput;
+}
+
+export function deleteMaterialInput(id) {
+    if (!currentDatabase || !currentDatabase.materialInputs) return false;
+    const lengthBefore = currentDatabase.materialInputs.length;
+    currentDatabase.materialInputs = currentDatabase.materialInputs.filter(m => m.id !== id);
+    if (currentDatabase.materialInputs.length < lengthBefore) {
+        saveDatabase();
+        return true;
+    }
+    return false;
+}
+
+export function saveMaterialInputs(list) {
+    if (!currentDatabase) return false;
+    currentDatabase.materialInputs = list || [];
     saveDatabase();
     return true;
 }

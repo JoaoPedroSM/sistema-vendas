@@ -1,0 +1,287 @@
+/* ==========================================================================
+   DESIGN SYSTEM & VARIABLES (Scoped to Receipts & Stock Incoming Views)
+   ========================================================================== */
+#view-comprovantes, #view-novo-comprovante, 
+#view-entradas, #view-nova-entrada, 
+#receipt-view-modal {
+    --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+
+    /* Scoped theme colors - Dark (Default) */
+    --bg-card: rgba(22, 30, 49, 0.6);
+    --bg-card-hover: rgba(28, 38, 62, 0.8);
+    
+    --primary: #0066b2;
+    --primary-hover: #00508c;
+    --primary-light: rgba(0, 102, 178, 0.15);
+
+    --success: #10b981;
+    --success-light: rgba(16, 185, 129, 0.15);
+    
+    --warning: #f59e0b;
+    --warning-light: rgba(245, 158, 11, 0.15);
+    
+    --danger: #ef4444;
+    --danger-light: rgba(239, 68, 68, 0.15);
+
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.3);
+    
+    --blur-card: blur(8px);
+}
+
+body.light-theme #view-comprovantes, 
+body.light-theme #view-novo-comprovante, 
+body.light-theme #view-entradas, 
+body.light-theme #view-nova-entrada, 
+body.light-theme #receipt-view-modal {
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-hover: rgba(255, 255, 255, 1);
+
+    --primary: #0066b2;
+    --primary-hover: #00508c;
+    --primary-light: rgba(0, 102, 178, 0.15);
+
+    --success: #059669;
+    --success-light: rgba(5, 150, 105, 0.1);
+
+    --warning: #d97706;
+    --warning-light: rgba(217, 119, 6, 0.1);
+
+    --danger: #dc2626;
+    --danger-light: rgba(220, 38, 38, 0.1);
+
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.08);
+    
+    --blur-card: blur(10px);
+}
+
+/* ==========================================================================
+   MODALS SYSTEM (Fixed Click Interception)
+   ========================================================================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content.receipt-view-content {
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 850px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 90vh;
+}
+
+/* ==========================================================================
+   NEWMED RECEIPT PAPER TIMBRADO (PRINT-STYLE)
+   ========================================================================== */
+.receipt-paper {
+    background-color: #ffffff;
+    color: #1f2937;
+    border-radius: 0px;
+    padding: 30px 40px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    max-width: 100%;
+    margin: 0 auto;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    overflow: hidden;
+    border-left: 6px solid #0066b2;
+    border-right: 6px solid #0066b2;
+    border-top: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.receipt-header-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 12px;
+}
+
+.receipt-header-table td {
+    padding: 6px 0;
+    vertical-align: middle;
+}
+
+.receipt-logo-container img {
+    height: 60px;
+    max-width: 250px;
+    object-fit: contain;
+}
+
+.receipt-title-band {
+    background-color: #0066b2;
+    color: #ffffff;
+    text-align: center;
+    padding: 8px 12px;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.receipt-section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0066b2;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 4px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.receipt-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.receipt-field {
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.receipt-field strong {
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    margin-bottom: 20px;
+    font-size: 13px;
+}
+
+.receipt-table th {
+    background-color: #f3f4f6;
+    color: #374151;
+    font-weight: 700;
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.receipt-table td {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.receipt-signatures-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+
+.receipt-signature-col {
+    text-align: center;
+}
+
+.receipt-signature-line-label {
+    border-top: 1px solid #9ca3af;
+    padding-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+}
+
+.newmed-footer {
+    text-align: center;
+    font-size: 10px;
+    color: #9ca3af;
+    margin-top: 30px;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 10px;
+}
+
+/* ==========================================================================
+   PRINT-ONLY OVERRIDES
+   ========================================================================== */
+@media print {
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    
+    .app-container,
+    .sidebar,
+    .main-content,
+    .glow-bg,
+    .modal,
+    .no-print,
+    .no-print-section {
+        display: none !important;
+    }
+    
+    #receipt-view-modal {
+        display: block !important;
+        position: static !important;
+        background-color: transparent !important;
+        backdrop-filter: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    .modal-content.receipt-view-content {
+        border: none !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-height: none !important;
+        transform: none !important;
+        position: static !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .modal-body.print-area {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    .receipt-paper {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}

@@ -11,7 +11,9 @@ import {
     clearDatabase, exportBackup, importBackup,
     convertExistingProposalToSale,
     getPaymentMethods, addPaymentMethod, deletePaymentMethod,
-    getSystemSettings, updateSystemSettings
+    getSystemSettings, updateSystemSettings,
+    getReceipts, addReceipt, deleteReceipt, saveReceipts,
+    getMaterialInputs, addMaterialInput, deleteMaterialInput, saveMaterialInputs
 } from './db.js';
 import { updateCharts, setChartPeriodoType } from './charts.js';
 import { getConsolidatedSellersMetrics, exportToExcel, exportToPDF } from './reports.js';
@@ -189,7 +191,11 @@ export function navigateTo(viewId) {
             'dashboard': 'Dashboard de Vendas',
             'vendas': 'Lançamento e Histórico de Vendas',
             'vendedores': 'Gerenciamento de Vendedores',
-            'relatorios': 'Exportação de Relatórios e Backup'
+            'relatorios': 'Exportação de Relatórios e Backup',
+            'comprovantes': 'Comprovantes de Entrega e Devolução',
+            'novo-comprovante': 'Novo Comprovante (Entrega/Devolução)',
+            'entradas': 'Entradas de Material (Estoque)',
+            'nova-entrada': 'Registrar Entrada de Material'
         };
         const titleEl = document.getElementById('page-title');
         if (titleEl) titleEl.textContent = titleMap[viewId] || 'VendasMonitor';
@@ -213,6 +219,22 @@ export function navigateTo(viewId) {
             refreshSellersPage();
         } else if (viewId === 'relatorios') {
             refreshReportsPage();
+        } else if (viewId === 'comprovantes') {
+            if (typeof window.refreshComprovantesPage === 'function') {
+                window.refreshComprovantesPage();
+            }
+        } else if (viewId === 'novo-comprovante') {
+            if (typeof window.clearComprovanteForm === 'function') {
+                window.clearComprovanteForm();
+            }
+        } else if (viewId === 'entradas') {
+            if (typeof window.refreshEntradasPage === 'function') {
+                window.refreshEntradasPage();
+            }
+        } else if (viewId === 'nova-entrada') {
+            if (typeof window.clearEntradaForm === 'function') {
+                window.clearEntradaForm();
+            }
         }
         updateCloudBadge();
     }
@@ -1371,6 +1393,35 @@ export function bindUIEvents() {
             }
         }
     });
+
+    // --- COMPROVANTES EVENT BINDINGS ---
+    document.getElementById('btn-go-to-new-receipt')?.addEventListener('click', () => navigateTo('novo-comprovante'));
+    document.getElementById('btn-cancel-receipt')?.addEventListener('click', () => navigateTo('comprovantes'));
+    document.getElementById('btn-add-item')?.addEventListener('click', () => addEmptyItemRowComprovantes());
+    document.getElementById('receipt-form')?.addEventListener('submit', handleFormSubmitComprovantes);
+    document.getElementById('search-input')?.addEventListener('input', renderReceiptsTable);
+    document.getElementById('filter-type')?.addEventListener('change', renderReceiptsTable);
+    document.getElementById('filter-date-start')?.addEventListener('change', renderReceiptsTable);
+    document.getElementById('filter-date-end')?.addEventListener('change', renderReceiptsTable);
+    document.getElementById('clear-filters')?.addEventListener('click', clearFiltersComprovantes);
+    
+    // --- ENTRADAS EVENT BINDINGS ---
+    document.getElementById('btn-go-to-new-entrada')?.addEventListener('click', () => navigateTo('nova-entrada'));
+    document.getElementById('btn-cancel-entrada')?.addEventListener('click', () => navigateTo('entradas'));
+    document.getElementById('btn-entrada-add-item')?.addEventListener('click', () => addEmptyItemRowEntradas());
+    document.getElementById('entrada-form')?.addEventListener('submit', handleFormSubmitEntradas);
+    document.getElementById('entrada-search-input')?.addEventListener('input', renderEntradasTable);
+    document.getElementById('entrada-filter-date-start')?.addEventListener('change', renderEntradasTable);
+    document.getElementById('entrada-filter-date-end')?.addEventListener('change', renderEntradasTable);
+    document.getElementById('entrada-clear-filters')?.addEventListener('click', clearFiltersEntradas);
+
+    // --- MODAL ACTION BINDINGS ---
+    document.getElementById('btn-close-view')?.addEventListener('click', () => {
+        document.getElementById('receipt-view-modal')?.classList.remove('active');
+    });
+    document.getElementById('btn-print-receipt')?.addEventListener('click', () => {
+        window.print();
+    });
 }
 
 /**
@@ -1846,3 +1897,827 @@ function updateCloudBadge() {
         badge.setAttribute('title', 'Backup em Nuvem Desativado');
     }
 }
+
+// ==========================================================================
+// COMPROVANTES & ENTRADAS MODULE LOGIC
+// ==========================================================================
+
+function escreverValorPorExtenso(valor) {
+    const limite = 999999.99;
+    if (valor <= 0) return 'zero reais';
+    if (valor > limite) return 'valor muito grande';
+
+    const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+    const dezenas10 = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+    const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+    const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+    function converterGrupo(n) {
+        if (n === 0) return '';
+        if (n === 100) return 'cem';
+        
+        let c = Math.floor(n / 100);
+        let resto = n % 100;
+        let d = Math.floor(resto / 10);
+        let u = resto % 10;
+        
+        let partes = [];
+        if (c > 0) partes.push(centenas[c]);
+        
+        if (resto > 0) {
+            if (resto >= 10 && resto < 20) {
+                partes.push(dezenas10[resto - 10]);
+            } else {
+                if (d > 0) partes.push(dezenas[d]);
+                if (u > 0) partes.push(unidades[u]);
+            }
+        }
+        return partes.join(' e ');
+    }
+
+    let inteiro = Math.floor(valor);
+    let centavos = Math.round((valor - inteiro) * 100);
+
+    let parts = [];
+    let milhar = Math.floor(inteiro / 1000);
+    let restoMilhar = inteiro % 1000;
+
+    if (milhar > 0) {
+        if (milhar === 1) {
+            parts.push('mil');
+        } else {
+            parts.push(converterGrupo(milhar) + ' mil');
+        }
+    }
+
+    if (restoMilhar > 0 || milhar === 0) {
+        let g = converterGrupo(restoMilhar);
+        if (g) {
+            if (milhar > 0 && restoMilhar < 100) {
+                parts.push('e ' + g);
+            } else {
+                parts.push(g);
+            }
+        }
+    }
+
+    let extenso = parts.join(' ');
+    if (inteiro === 1) {
+        extenso += ' real';
+    } else if (inteiro > 1) {
+        extenso += ' reais';
+    }
+
+    if (centavos > 0) {
+        let gCentavos = converterGrupo(centavos);
+        if (inteiro > 0) {
+            extenso += ' e ' + gCentavos;
+        } else {
+            extenso += gCentavos;
+        }
+        if (centavos === 1) {
+            extenso += ' centavo';
+        } else {
+            extenso += ' centavos';
+        }
+    }
+
+    return extenso;
+}
+
+// --- LOGICA DE COMPROVANTES (SAIDA) ---
+
+function refreshComprovantesPage() {
+    const receipts = getReceipts();
+    
+    // Atualiza KPIs
+    const totalCount = receipts.length;
+    const entregaCount = receipts.filter(r => r.type === 'entrega').length;
+    const devolucaoCount = receipts.filter(r => r.type === 'devolucao').length;
+    
+    const elTotal = document.getElementById('stat-total');
+    const elEntrega = document.getElementById('stat-entrega');
+    const elDevolucao = document.getElementById('stat-devolucao');
+    
+    if (elTotal) elTotal.textContent = totalCount;
+    if (elEntrega) elEntrega.textContent = entregaCount;
+    if (elDevolucao) elDevolucao.textContent = devolucaoCount;
+    
+    // Autocompletes baseados no histórico
+    const clients = [...new Set(receipts.map(r => r.client).filter(Boolean))];
+    const atts = [...new Set(receipts.map(r => r.att).filter(Boolean))];
+    const materials = [...new Set(receipts.flatMap(r => r.items.map(i => i.desc)).filter(Boolean))];
+    
+    const clientDL = document.getElementById('clients-datalist');
+    const attDL = document.getElementById('att-datalist');
+    const matDL = document.getElementById('materials-datalist');
+    
+    if (clientDL) clientDL.innerHTML = clients.map(c => `<option value="${escapeHTML(c)}">`).join('');
+    if (attDL) attDL.innerHTML = atts.map(a => `<option value="${escapeHTML(a)}">`).join('');
+    if (matDL) matDL.innerHTML = materials.map(m => `<option value="${escapeHTML(m)}">`).join('');
+    
+    renderReceiptsTable();
+}
+
+function clearComprovanteForm() {
+    const form = document.getElementById('receipt-form');
+    if (!form) return;
+    form.reset();
+    
+    // Preenche com data e hora atual
+    const now = new Date();
+    const dateInput = document.getElementById('form-date');
+    const timeInput = document.getElementById('form-time');
+    
+    if (dateInput) dateInput.value = now.toISOString().split('T')[0];
+    if (timeInput) timeInput.value = now.toTimeString().split(' ')[0].substring(0, 5);
+    
+    const delivererInput = document.getElementById('receipt-deliverer');
+    if (delivererInput) delivererInput.value = 'Aldenis Marques';
+    
+    const tbody = document.getElementById('form-items-body');
+    if (tbody) tbody.innerHTML = '';
+    
+    const grandTotalEl = document.getElementById('form-grand-total');
+    if (grandTotalEl) grandTotalEl.textContent = 'R$ 0,00';
+    
+    const extensoEl = document.getElementById('receipt-val-extenso');
+    if (extensoEl) extensoEl.value = 'zero reais';
+    
+    // Adiciona uma linha em branco inicial
+    addEmptyItemRowComprovantes();
+}
+
+function calculateComprovanteGrandTotal() {
+    let grandTotal = 0;
+    const rows = document.querySelectorAll('#form-items-body tr');
+    
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const valUnit = parseFloat(row.querySelector('.item-val-unit')?.value) || 0;
+        const total = qty * valUnit;
+        
+        const totalInput = row.querySelector('.item-val-total');
+        if (totalInput) totalInput.value = total.toFixed(2);
+        
+        grandTotal += total;
+    });
+    
+    const grandTotalEl = document.getElementById('form-grand-total');
+    if (grandTotalEl) grandTotalEl.textContent = grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    
+    const extensoEl = document.getElementById('receipt-val-extenso');
+    if (extensoEl) extensoEl.value = escreverValorPorExtenso(grandTotal);
+}
+
+function addEmptyItemRowComprovantes() {
+    const tbody = document.getElementById('form-items-body');
+    if (!tbody) return;
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="padding: 8px;"><input type="number" min="1" value="1" required class="item-qty" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="text" required placeholder="Nome do Equipamento" list="materials-datalist" class="item-desc" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="text" placeholder="Opcional" class="item-serial" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="number" min="0" step="0.01" value="0.00" class="item-val-unit" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="text" readonly value="0.00" class="item-val-total" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(255,255,255,0.05); color: #fff; font-weight: 600;"></td>
+        <td style="padding: 8px; text-align: center;"><button type="button" class="btn btn-danger btn-xs btn-delete-row" style="padding: 6px;"><i class="ti ti-trash" style="font-size: 16px;"></i></button></td>
+    `;
+    
+    tbody.appendChild(tr);
+    
+    // Bind listeners
+    const qtyInput = tr.querySelector('.item-qty');
+    const valInput = tr.querySelector('.item-val-unit');
+    const delBtn = tr.querySelector('.btn-delete-row');
+    
+    qtyInput?.addEventListener('input', calculateComprovanteGrandTotal);
+    valInput?.addEventListener('input', calculateComprovanteGrandTotal);
+    delBtn?.addEventListener('click', () => {
+        tr.remove();
+        calculateComprovanteGrandTotal();
+        if (tbody.querySelectorAll('tr').length === 0) {
+            addEmptyItemRowComprovantes();
+        }
+    });
+}
+
+function handleFormSubmitComprovantes(e) {
+    e.preventDefault();
+    
+    const form = document.getElementById('receipt-form');
+    if (!form || !form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const rows = document.querySelectorAll('#form-items-body tr');
+    const items = [];
+    let hasEmpty = false;
+    
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const desc = row.querySelector('.item-desc')?.value.trim() || '';
+        const serial = row.querySelector('.item-serial')?.value.trim() || '';
+        const valUnit = parseFloat(row.querySelector('.item-val-unit')?.value) || 0;
+        const valTotal = qty * valUnit;
+        
+        if (!desc) {
+            hasEmpty = true;
+            return;
+        }
+        
+        items.push({ qty, desc, serial, valUnit, valTotal });
+    });
+    
+    if (hasEmpty || items.length === 0) {
+        showToast('Erro no Formulário', 'Por favor, adicione e descreva pelo menos 1 material.', 'danger');
+        return;
+    }
+    
+    const ref = document.getElementById('receipt-doc-ref').value.trim();
+    const type = document.getElementById('receipt-type').value;
+    const date = document.getElementById('form-date').value;
+    const time = document.getElementById('form-time').value;
+    const client = document.getElementById('receipt-client').value.trim();
+    const att = document.getElementById('receipt-att').value.trim();
+    const notes = document.getElementById('receipt-notes').value.trim();
+    const deliverer = document.getElementById('receipt-deliverer').value.trim();
+    
+    const grandTotal = items.reduce((sum, item) => sum + item.valTotal, 0);
+    const valExtenso = escreverValorPorExtenso(grandTotal);
+    
+    const receipt = {
+        id: 'cmp_' + Date.now(),
+        ref, type, date, time, client, att, items, grandTotal, valExtenso, notes, deliverer
+    };
+    
+    if (addReceipt(receipt)) {
+        showToast('Sucesso', 'Comprovante emitido com sucesso!', 'success');
+        navigateTo('comprovantes');
+    } else {
+        showToast('Erro', 'Não foi possível salvar o comprovante.', 'danger');
+    }
+}
+
+function renderReceiptsTable() {
+    const listEl = document.getElementById('receipts-list');
+    if (!listEl) return;
+    
+    const receipts = getReceipts();
+    const q = document.getElementById('search-input')?.value.toLowerCase() || '';
+    const type = document.getElementById('filter-type')?.value || 'all';
+    const start = document.getElementById('filter-date-start')?.value || '';
+    const end = document.getElementById('filter-date-end')?.value || '';
+    
+    // Ordena decrescente (mais recentes primeiro)
+    const filtered = receipts.filter(r => {
+        // Query match
+        const matchQ = !q || 
+            r.ref.toLowerCase().includes(q) || 
+            r.client.toLowerCase().includes(q) || 
+            r.deliverer.toLowerCase().includes(q) || 
+            r.items.some(i => i.desc.toLowerCase().includes(q) || i.serial.toLowerCase().includes(q));
+            
+        // Type match
+        const matchType = type === 'all' || r.type === type;
+        
+        // Date match
+        const matchDate = (!start || r.date >= start) && (!end || r.date <= end);
+        
+        return matchQ && matchType && matchDate;
+    }).sort((a, b) => b.id.localeCompare(a.id));
+    
+    if (filtered.length === 0) {
+        listEl.innerHTML = `
+            <tr class="empty-state-row">
+                <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                    Nenhum comprovante encontrado para os filtros selecionados.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    listEl.innerHTML = filtered.map(r => `
+        <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
+            <td style="padding: 14px 20px; font-weight: 600; color: #fff;">${escapeHTML(r.ref)}</td>
+            <td style="padding: 14px 20px;">
+                <span style="padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; text-transform: uppercase; background: ${r.type === 'entrega' ? 'rgba(16, 185, 129, 0.15); color: #10b981;' : 'rgba(245, 158, 11, 0.15); color: #f59e0b;'}">
+                    ${r.type === 'entrega' ? 'Entrega' : 'Devolução'}
+                </span>
+            </td>
+            <td style="padding: 14px 20px;">${escapeHTML(r.client)}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary);">${escapeHTML(r.att || '-')}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary);">${r.date.split('-').reverse().join('/')} às ${escapeHTML(r.time)}</td>
+            <td style="padding: 14px 20px; font-weight: 700; color: #fff;">${r.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="padding: 14px 20px; text-align: center;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-secondary btn-xs btn-view-cmp" data-id="${r.id}" title="Visualizar / Imprimir" style="padding: 6px;"><i class="ti ti-eye"></i></button>
+                    <button class="btn btn-success btn-xs btn-share-cmp" data-id="${r.id}" style="background-color: #25d366; border-color: #25d366; color: #fff; padding: 6px;" title="Enviar WhatsApp"><i class="ti ti-brand-whatsapp"></i></button>
+                    <button class="btn btn-danger btn-xs btn-delete-cmp" data-id="${r.id}" title="Excluir" style="padding: 6px;"><i class="ti ti-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+    
+    // Bind row actions
+    listEl.querySelectorAll('.btn-view-cmp').forEach(btn => {
+        btn.addEventListener('click', () => viewReceiptDetails(btn.dataset.id));
+    });
+    listEl.querySelectorAll('.btn-share-cmp').forEach(btn => {
+        btn.addEventListener('click', () => shareReceiptWhatsApp(btn.dataset.id));
+    });
+    listEl.querySelectorAll('.btn-delete-cmp').forEach(btn => {
+        btn.addEventListener('click', () => deleteReceiptAction(btn.dataset.id));
+    });
+}
+
+function clearFiltersComprovantes() {
+    const search = document.getElementById('search-input');
+    const type = document.getElementById('filter-type');
+    const start = document.getElementById('filter-date-start');
+    const end = document.getElementById('filter-date-end');
+    
+    if (search) search.value = '';
+    if (type) type.value = 'all';
+    if (start) start.value = '';
+    if (end) end.value = '';
+    
+    renderReceiptsTable();
+}
+
+function viewReceiptDetails(id) {
+    const receipts = getReceipts();
+    const r = receipts.find(item => item.id === id);
+    if (!r) return;
+    
+    const paperContent = document.getElementById('receipt-paper-content');
+    if (!paperContent) return;
+    
+    const dateFormatted = r.date.split('-').reverse().join('/');
+    const docTitle = r.type === 'entrega' ? 'COMPROVANTE DE ENTREGA' : 'COMPROVANTE DE DEVOLUÇÃO';
+    
+    paperContent.innerHTML = `
+        <table class="receipt-header-table">
+            <tr>
+                <td class="receipt-logo-container">
+                    <img src="header.png" alt="NEWMED" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
+                </td>
+                <td style="text-align: right; font-size: 12px; color: #4b5563;">
+                    <strong>NEWMED MEDICINA LTDA</strong><br>
+                    Suporte & Assistência Técnica Especializada<br>
+                    Fone: (81) 98132-0056 | Recife-PE
+                </td>
+            </tr>
+        </table>
+        
+        <div class="receipt-title-band">${docTitle}</div>
+        
+        <div class="receipt-grid-2">
+            <div>
+                <div class="receipt-field"><strong>Referência / NF:</strong> ${escapeHTML(r.ref)}</div>
+                <div class="receipt-field"><strong>Destinatário:</strong> ${escapeHTML(r.client)}</div>
+                <div class="receipt-field"><strong>Aos cuidados (ATT):</strong> ${escapeHTML(r.att || 'Geral')}</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="receipt-field"><strong>Data de Emissão:</strong> ${dateFormatted}</div>
+                <div class="receipt-field"><strong>Hora de Emissão:</strong> ${escapeHTML(r.time)}</div>
+                <div class="receipt-field"><strong>Entregador/Técnico:</strong> ${escapeHTML(r.deliverer)}</div>
+            </div>
+        </div>
+        
+        <div class="receipt-section-title">Relação de Materiais / Equipamentos</div>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">Qtd</th>
+                    <th>Descrição do Equipamento</th>
+                    <th style="width: 150px; text-align: center;">Nº Série (N/S)</th>
+                    <th style="width: 120px; text-align: right;">Val. Unitário</th>
+                    <th style="width: 120px; text-align: right;">Val. Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${r.items.map(item => `
+                    <tr>
+                        <td style="text-align: center;">${item.qty}</td>
+                        <td style="font-weight: 600;">${escapeHTML(item.desc)}</td>
+                        <td style="text-align: center; color: #4b5563;">${escapeHTML(item.serial || 'N/A')}</td>
+                        <td style="text-align: right;">${item.valUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="text-align: right; font-weight: 700;">${item.valTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 16px;">
+            <div style="max-width: 60%;">
+                <div class="receipt-field"><strong>Valor por Extenso:</strong></div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #374151; background-color: #f3f4f6; padding: 6px 10px; border-radius: 4px; border: 1px dashed #d1d5db;">
+                    ${escapeHTML(r.valExtenso)}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 11px; color: #4b5563; display: block; margin-bottom: 2px;">Valor Geral Declarado</span>
+                <strong style="font-size: 18px; color: #0066b2; font-family: 'Outfit', sans-serif;">${r.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+            </div>
+        </div>
+        
+        ${r.notes ? `
+            <div class="receipt-section-title">Observações do Atendimento</div>
+            <div style="font-size: 12px; color: #4b5563; background-color: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; white-space: pre-wrap;">${escapeHTML(r.notes)}</div>
+        ` : ''}
+        
+        <div class="receipt-signatures-panel">
+            <div class="receipt-signature-col">
+                <div style="height: 45px;"></div>
+                <div class="receipt-signature-line-label">Assinatura do Recebedor / Carimbo</div>
+            </div>
+            <div class="receipt-signature-col">
+                <div style="height: 45px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 600; color: #374151;">${escapeHTML(r.deliverer)}</div>
+                <div class="receipt-signature-line-label">Responsável NEWMED</div>
+            </div>
+        </div>
+        
+        <div class="newmed-footer">
+            NEWMED MEDICINA LTDA | Av. Agamenon Magalhães, Recife-PE | Suporte Técnico e Comercial
+        </div>
+    `;
+    
+    // Bind share
+    const zapBtn = document.getElementById('btn-share-whatsapp');
+    if (zapBtn) {
+        zapBtn.onclick = () => shareReceiptWhatsApp(r.id);
+    }
+    
+    const modal = document.getElementById('receipt-view-modal');
+    if (modal) modal.classList.add('active');
+}
+
+function shareReceiptWhatsApp(id) {
+    const receipts = getReceipts();
+    const r = receipts.find(item => item.id === id);
+    if (!r) return;
+    
+    const dateFormatted = r.date.split('-').reverse().join('/');
+    const docTitle = r.type === 'entrega' ? 'Comprovante de Entrega' : 'Comprovante de Devolução';
+    
+    let text = `*NEWMED - ${docTitle.toUpperCase()}*\n`;
+    text += `*Ref:* ${r.ref}\n`;
+    text += `*Cliente:* ${r.client}\n`;
+    if (r.att) text += `*A/C:* ${r.att}\n`;
+    text += `*Data:* ${dateFormatted} às ${r.time}\n`;
+    text += `*Entregador:* ${r.deliverer}\n\n`;
+    
+    text += `*ITENS RECEBIDOS:*\n`;
+    r.items.forEach(item => {
+        text += `- ${item.qty}x _${item.desc}_ ${item.serial ? `(S/N: ${item.serial})` : ''} - U: ${item.valUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+    });
+    
+    text += `\n*Valor Declarado:* ${r.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+    if (r.notes) text += `*Obs:* ${r.notes}\n`;
+    
+    const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+    window.open(url, '_blank');
+}
+
+function deleteReceiptAction(id) {
+    openConfirmModal(
+        'Confirmar Exclusão',
+        'Tem certeza absoluta de que deseja excluir este comprovante do banco de dados?',
+        () => {
+            if (deleteReceipt(id)) {
+                showToast('Excluído', 'Comprovante removido com sucesso.', 'success');
+                refreshComprovantesPage();
+            }
+        }
+    );
+}
+
+// --- LOGICA DE ENTRADA DE MATERIAL ---
+
+function refreshEntradasPage() {
+    renderEntradasTable();
+}
+
+function clearEntradaForm() {
+    const form = document.getElementById('entrada-form');
+    if (!form) return;
+    form.reset();
+    
+    // Preenche com data e hora atual
+    const now = new Date();
+    const dateInput = document.getElementById('entrada-date');
+    const timeInput = document.getElementById('entrada-time');
+    
+    if (dateInput) dateInput.value = now.toISOString().split('T')[0];
+    if (timeInput) timeInput.value = now.toTimeString().split(' ')[0].substring(0, 5);
+    
+    const receiverInput = document.getElementById('entrada-receiver');
+    const loggedUsername = document.getElementById('session-username')?.textContent || 'Usuário';
+    if (receiverInput) receiverInput.value = loggedUsername;
+    
+    const tbody = document.getElementById('entrada-items-body');
+    if (tbody) tbody.innerHTML = '';
+    
+    const grandTotalEl = document.getElementById('entrada-grand-total');
+    if (grandTotalEl) grandTotalEl.textContent = 'R$ 0,00';
+    
+    // Adiciona uma linha em branco inicial
+    addEmptyItemRowEntradas();
+}
+
+function calculateEntradaGrandTotal() {
+    let grandTotal = 0;
+    const rows = document.querySelectorAll('#entrada-items-body tr');
+    
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const valUnit = parseFloat(row.querySelector('.item-val-unit')?.value) || 0;
+        const total = qty * valUnit;
+        
+        const totalInput = row.querySelector('.item-val-total');
+        if (totalInput) totalInput.value = total.toFixed(2);
+        
+        grandTotal += total;
+    });
+    
+    const grandTotalEl = document.getElementById('entrada-grand-total');
+    if (grandTotalEl) grandTotalEl.textContent = grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function addEmptyItemRowEntradas() {
+    const tbody = document.getElementById('entrada-items-body');
+    if (!tbody) return;
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="padding: 8px;"><input type="number" min="1" value="1" required class="item-qty" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="text" required placeholder="Material ou Equipamento" list="materials-datalist" class="item-desc" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="text" placeholder="Opcional" class="item-serial" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="number" min="0" step="0.01" value="0.00" class="item-val-unit" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.15); color: #fff;"></td>
+        <td style="padding: 8px;"><input type="text" readonly value="0.00" class="item-val-total" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(255,255,255,0.05); color: #fff; font-weight: 600;"></td>
+        <td style="padding: 8px; text-align: center;"><button type="button" class="btn btn-danger btn-xs btn-delete-row" style="padding: 6px;"><i class="ti ti-trash" style="font-size: 16px;"></i></button></td>
+    `;
+    
+    tbody.appendChild(tr);
+    
+    // Bind listeners
+    const qtyInput = tr.querySelector('.item-qty');
+    const valInput = tr.querySelector('.item-val-unit');
+    const delBtn = tr.querySelector('.btn-delete-row');
+    
+    qtyInput?.addEventListener('input', calculateEntradaGrandTotal);
+    valInput?.addEventListener('input', calculateEntradaGrandTotal);
+    delBtn?.addEventListener('click', () => {
+        tr.remove();
+        calculateEntradaGrandTotal();
+        if (tbody.querySelectorAll('tr').length === 0) {
+            addEmptyItemRowEntradas();
+        }
+    });
+}
+
+function handleFormSubmitEntradas(e) {
+    e.preventDefault();
+    
+    const form = document.getElementById('entrada-form');
+    if (!form || !form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const rows = document.querySelectorAll('#entrada-items-body tr');
+    const items = [];
+    let hasEmpty = false;
+    
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const desc = row.querySelector('.item-desc')?.value.trim() || '';
+        const serial = row.querySelector('.item-serial')?.value.trim() || '';
+        const valUnit = parseFloat(row.querySelector('.item-val-unit')?.value) || 0;
+        const valTotal = qty * valUnit;
+        
+        if (!desc) {
+            hasEmpty = true;
+            return;
+        }
+        
+        items.push({ qty, desc, serial, valUnit, valTotal });
+    });
+    
+    if (hasEmpty || items.length === 0) {
+        showToast('Erro no Formulário', 'Por favor, adicione e descreva pelo menos 1 material.', 'danger');
+        return;
+    }
+    
+    const ref = document.getElementById('entrada-doc-ref').value.trim();
+    const source = document.getElementById('entrada-source').value.trim();
+    const date = document.getElementById('entrada-date').value;
+    const time = document.getElementById('entrada-time').value;
+    const receiver = document.getElementById('entrada-receiver').value.trim();
+    const notes = document.getElementById('entrada-notes').value.trim();
+    
+    const grandTotal = items.reduce((sum, item) => sum + item.valTotal, 0);
+    
+    const inputRecord = {
+        id: 'ent_' + Date.now(),
+        ref, source, date, time, receiver, items, grandTotal, notes
+    };
+    
+    if (addMaterialInput(inputRecord)) {
+        showToast('Sucesso', 'Entrada de material registrada com sucesso!', 'success');
+        navigateTo('entradas');
+    } else {
+        showToast('Erro', 'Não foi possível registrar a entrada.', 'danger');
+    }
+}
+
+function renderEntradasTable() {
+    const listEl = document.getElementById('entradas-list');
+    if (!listEl) return;
+    
+    const inputs = getMaterialInputs();
+    const q = document.getElementById('entrada-search-input')?.value.toLowerCase() || '';
+    const start = document.getElementById('entrada-filter-date-start')?.value || '';
+    const end = document.getElementById('entrada-filter-date-end')?.value || '';
+    
+    const filtered = inputs.filter(ent => {
+        const matchQ = !q || 
+            ent.ref.toLowerCase().includes(q) || 
+            ent.source.toLowerCase().includes(q) || 
+            ent.receiver.toLowerCase().includes(q) || 
+            ent.items.some(i => i.desc.toLowerCase().includes(q) || i.serial.toLowerCase().includes(q));
+            
+        const matchDate = (!start || ent.date >= start) && (!end || ent.date <= end);
+        
+        return matchQ && matchDate;
+    }).sort((a, b) => b.id.localeCompare(a.id));
+    
+    if (filtered.length === 0) {
+        listEl.innerHTML = `
+            <tr class="empty-state-row">
+                <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                    Nenhuma entrada de material encontrada.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    listEl.innerHTML = filtered.map(ent => `
+        <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
+            <td style="padding: 14px 20px; font-weight: 600; color: #fff;">${escapeHTML(ent.ref)}</td>
+            <td style="padding: 14px 20px;">${escapeHTML(ent.source)}</td>
+            <td style="padding: 14px 20px;">${escapeHTML(ent.receiver)}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary);">${ent.date.split('-').reverse().join('/')} às ${escapeHTML(ent.time)}</td>
+            <td style="padding: 14px 20px; color: var(--text-secondary); font-weight: 600;">${ent.items.reduce((sum, item) => sum + item.qty, 0)} itens</td>
+            <td style="padding: 14px 20px; font-weight: 700; color: #fff;">${ent.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="padding: 14px 20px; text-align: center;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-secondary btn-xs btn-view-ent" data-id="${ent.id}" title="Visualizar / Imprimir" style="padding: 6px;"><i class="ti ti-eye"></i></button>
+                    <button class="btn btn-danger btn-xs btn-delete-ent" data-id="${ent.id}" title="Excluir" style="padding: 6px;"><i class="ti ti-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+    
+    // Bind row actions
+    listEl.querySelectorAll('.btn-view-ent').forEach(btn => {
+        btn.addEventListener('click', () => viewEntradaDetails(btn.dataset.id));
+    });
+    listEl.querySelectorAll('.btn-delete-ent').forEach(btn => {
+        btn.addEventListener('click', () => deleteEntradaAction(btn.dataset.id));
+    });
+}
+
+function clearFiltersEntradas() {
+    const search = document.getElementById('entrada-search-input');
+    const start = document.getElementById('entrada-filter-date-start');
+    const end = document.getElementById('entrada-filter-date-end');
+    
+    if (search) search.value = '';
+    if (start) start.value = '';
+    if (end) end.value = '';
+    
+    renderEntradasTable();
+}
+
+function viewEntradaDetails(id) {
+    const inputs = getMaterialInputs();
+    const ent = inputs.find(item => item.id === id);
+    if (!ent) return;
+    
+    const paperContent = document.getElementById('receipt-paper-content');
+    if (!paperContent) return;
+    
+    const dateFormatted = ent.date.split('-').reverse().join('/');
+    
+    paperContent.innerHTML = `
+        <table class="receipt-header-table">
+            <tr>
+                <td class="receipt-logo-container">
+                    <img src="header.png" alt="NEWMED" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
+                </td>
+                <td style="text-align: right; font-size: 12px; color: #4b5563;">
+                    <strong>NEWMED MEDICINA LTDA</strong><br>
+                    Controle de Estoque & Recebimentos<br>
+                    Fone: (81) 98132-0056 | Recife-PE
+                </td>
+            </tr>
+        </table>
+        
+        <div class="receipt-title-band" style="background-color: #10b981;">REGISTRO DE ENTRADA DE MATERIAL</div>
+        
+        <div class="receipt-grid-2">
+            <div>
+                <div class="receipt-field"><strong>Ref / NF Entrada:</strong> ${escapeHTML(ent.ref)}</div>
+                <div class="receipt-field"><strong>Fornecedor / Origem:</strong> ${escapeHTML(ent.source)}</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="receipt-field"><strong>Data de Recebimento:</strong> ${dateFormatted}</div>
+                <div class="receipt-field"><strong>Hora de Recebimento:</strong> ${escapeHTML(ent.time)}</div>
+                <div class="receipt-field"><strong>Recebido por:</strong> ${escapeHTML(ent.receiver)}</div>
+            </div>
+        </div>
+        
+        <div class="receipt-section-title">Lista de Materiais Incorporados</div>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">Qtd</th>
+                    <th>Descrição do Equipamento / Material</th>
+                    <th style="width: 150px; text-align: center;">Nº Série (N/S)</th>
+                    <th style="width: 120px; text-align: right;">Val. Unitário</th>
+                    <th style="width: 120px; text-align: right;">Val. Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${ent.items.map(item => `
+                    <tr>
+                        <td style="text-align: center;">${item.qty}</td>
+                        <td style="font-weight: 600;">${escapeHTML(item.desc)}</td>
+                        <td style="text-align: center; color: #4b5563;">${escapeHTML(item.serial || 'N/A')}</td>
+                        <td style="text-align: right;">${item.valUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="text-align: right; font-weight: 700;">${item.valTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        
+        <div style="text-align: right; margin-top: 16px;">
+            <span style="font-size: 11px; color: #4b5563; display: block; margin-bottom: 2px;">Valor Total da Entrada</span>
+            <strong style="font-size: 18px; color: #10b981; font-family: 'Outfit', sans-serif;">${ent.grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+        </div>
+        
+        ${ent.notes ? `
+            <div class="receipt-section-title">Observações Internas</div>
+            <div style="font-size: 12px; color: #4b5563; background-color: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; white-space: pre-wrap;">${escapeHTML(ent.notes)}</div>
+        ` : ''}
+        
+        <div class="receipt-signatures-panel" style="margin-top: 50px;">
+            <div class="receipt-signature-col" style="grid-column: 1 / span 2; max-width: 300px; margin: 0 auto;">
+                <div style="height: 45px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 600; color: #374151;">${escapeHTML(ent.receiver)}</div>
+                <div class="receipt-signature-line-label">Responsável pelo Recebimento</div>
+            </div>
+        </div>
+        
+        <div class="newmed-footer">
+            NEWMED MEDICINA LTDA | Relatório Interno de Entrada de Inventário
+        </div>
+    `;
+    
+    // Hide whatsapp share button for incoming inventory
+    const zapBtn = document.getElementById('btn-share-whatsapp');
+    if (zapBtn) {
+        zapBtn.style.display = 'none';
+    }
+    
+    const modal = document.getElementById('receipt-view-modal');
+    if (modal) modal.classList.add('active');
+}
+
+function deleteEntradaAction(id) {
+    openConfirmModal(
+        'Confirmar Exclusão',
+        'Tem certeza absoluta de que deseja excluir este registro de entrada de material?',
+        () => {
+            if (deleteMaterialInput(id)) {
+                showToast('Excluído', 'Entrada de material removida.', 'success');
+                refreshEntradasPage();
+            }
+        }
+    );
+}
+
+// Map variables to window for router execution compatibility
+window.refreshComprovantesPage = refreshComprovantesPage;
+window.clearComprovanteForm = clearComprovanteForm;
+window.refreshEntradasPage = refreshEntradasPage;
+window.clearEntradaForm = clearEntradaForm;
+window.calculateComprovanteGrandTotal = calculateComprovanteGrandTotal;
+window.calculateEntradaGrandTotal = calculateEntradaGrandTotal;
+window.addEmptyItemRowComprovantes = addEmptyItemRowComprovantes;
+window.addEmptyItemRowEntradas = addEmptyItemRowEntradas;
+
