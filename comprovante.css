@@ -236,7 +236,7 @@ body.light-theme #receipt-view-modal {
 @media print {
     @page {
         size: A4 portrait;
-        margin: 6mm 10mm 6mm 10mm;
+        margin: 0mm;
     }
     
     html, body {
@@ -296,26 +296,34 @@ body.light-theme #receipt-view-modal {
         break-inside: avoid !important;
         font-size: 11px !important;
         line-height: 1.25 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .receipt-paper * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
     .receipt-paper img[alt="NEWMED"] {
-        max-height: 60px !important;
-        width: auto !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
         display: block !important;
+        margin: 0 !important;
     }
 
     .receipt-paper img[alt="NEWMED Rodapé"] {
-        max-height: 45px !important;
-        width: auto !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
         display: block !important;
+        margin: 0 !important;
+        margin-top: 15px !important;
     }
     
     .receipt-paper div[style*="padding: 0 40px"] {
-        padding: 0 20px !important;
+        padding: 0 35px !important;
     }
     
     .receipt-paper table {
