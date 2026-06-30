@@ -2289,24 +2289,10 @@ function viewReceiptDetails(id) {
     const paymentMethodText = r.paymentMethod || 'A COMBINAR';
 
     paperContent.innerHTML = `
-        <!-- Cabeçalho Oficial NEWMED -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <tr>
-                <td style="width: 45%; vertical-align: middle;">
-                    <img src="header.png" alt="NEWMED" style="height: 65px; max-width: 100%; object-fit: contain;" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
-                </td>
-                <td style="text-align: right; vertical-align: middle; font-family: sans-serif; font-size: 11px; color: #555; line-height: 1.4;">
-                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">Venda, Assistência e locação</span><br>
-                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">de Equipamentos Médico-Hospitalares</span><br>
-                    <strong style="color: #333;">Aldenis Marques</strong><br>
-                    Fones: (81) 99656.0780<br>
-                    E-mail: aldenis@newmedequipamentos.com.br
-                </td>
-            </tr>
-        </table>
-        
-        <!-- Linha divisória horizontal azul do cabeçalho -->
-        <div style="height: 3px; background-color: #0066b2; margin-bottom: 16px;"></div>
+        <!-- Cabeçalho Oficial NEWMED (Imagem Unificada) -->
+        <div style="text-align: center; margin-bottom: 16px;">
+            <img src="header.png" alt="NEWMED" style="width: 100%; display: block;">
+        </div>
         
         <!-- Faixa de Título -->
         <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
@@ -2694,24 +2680,10 @@ function viewEntradaDetails(id) {
     }
     
     paperContent.innerHTML = `
-        <!-- Cabeçalho Oficial NEWMED -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <tr>
-                <td style="width: 45%; vertical-align: middle;">
-                    <img src="header.png" alt="NEWMED" style="height: 65px; max-width: 100%; object-fit: contain;" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
-                </td>
-                <td style="text-align: right; vertical-align: middle; font-family: sans-serif; font-size: 11px; color: #555; line-height: 1.4;">
-                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">Venda, Assistência e locação</span><br>
-                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">de Equipamentos Médico-Hospitalares</span><br>
-                    <strong style="color: #333;">Aldenis Marques</strong><br>
-                    Fones: (81) 99656.0780<br>
-                    E-mail: aldenis@newmedequipamentos.com.br
-                </td>
-            </tr>
-        </table>
-        
-        <!-- Linha divisória horizontal azul do cabeçalho -->
-        <div style="height: 3px; background-color: #0066b2; margin-bottom: 16px;"></div>
+        <!-- Cabeçalho Oficial NEWMED (Imagem Unificada) -->
+        <div style="text-align: center; margin-bottom: 16px;">
+            <img src="header.png" alt="NEWMED" style="width: 100%; display: block;">
+        </div>
         
         <!-- Faixa de Título -->
         <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
