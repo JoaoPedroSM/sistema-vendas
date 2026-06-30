@@ -12,6 +12,11 @@
     
     <!-- CSS Estilos -->
     <link rel="stylesheet" href="style.css?v=5">
+    
+    <!-- Tabler Icons (para Comprovantes e Entradas) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <!-- CSS Comprovantes & Entradas -->
+    <link rel="stylesheet" href="comprovante.css">
 
     <!-- Bibliotecas Locais (Alta Disponibilidade & Offline) -->
     <!-- CryptoJS para Criptografia local -->
@@ -170,6 +175,18 @@
                             <a href="#" class="nav-link" data-view="relatorios">
                                 <i data-lucide="bar-chart-2"></i>
                                 <span>Relatórios e Banco</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-view="comprovantes">
+                                <i data-lucide="file-check"></i>
+                                <span>Comprovantes</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-view="entradas">
+                                <i data-lucide="package-plus"></i>
+                                <span>Entrada de Material</span>
                             </a>
                         </li>
                     </ul>
@@ -888,6 +905,371 @@
                     </div>
                 </section>
 
+                <!-- 5. TELA: COMPROVANTES (LISTA) -->
+                <section id="view-comprovantes" class="app-view hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Comprovantes NEWMED</h2>
+                            <p style="font-size: 0.875rem; color: var(--text-secondary);">Acompanhe e gerencie seus comprovantes de entrega e devolução</p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-go-to-new-receipt" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="ti ti-plus" style="font-size: 16px;"></i> Novo Comprovante
+                        </button>
+                    </div>
+
+                    <!-- Grid de KPIs para Comprovantes -->
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px;">
+                        <div class="stat-card" style="background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 16px;">
+                            <div class="stat-icon icon-blue" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(0, 102, 178, 0.15); color: #0066b2;"><i class="ti ti-file-text"></i></div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Total de Comprovantes</p>
+                                <h3 id="stat-total" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 16px;">
+                            <div class="stat-icon icon-green" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(16, 185, 129, 0.15); color: #10b981;"><i class="ti ti-truck-delivery"></i></div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Entregas Realizadas</p>
+                                <h3 id="stat-entrega" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 16px;">
+                            <div class="stat-icon icon-orange" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(245, 158, 11, 0.15); color: #f59e0b;"><i class="ti ti-package-export"></i></div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Devoluções Registradas</p>
+                                <h3 id="stat-devolucao" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros de Busca -->
+                    <div class="filters-bar" style="background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
+                        <div class="filter-item" style="flex-grow: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="search-input" style="font-size: 0.75rem; color: var(--text-secondary);">Buscar</label>
+                            <div style="position: relative;">
+                                <i class="ti ti-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                                <input type="text" id="search-input" placeholder="Cliente, ref, material..." style="width: 100%; padding: 10px 12px 10px 36px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                            </div>
+                        </div>
+                        <div class="filter-item" style="width: 150px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="filter-type" style="font-size: 0.75rem; color: var(--text-secondary);">Tipo</label>
+                            <select id="filter-type" style="padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                <option value="all">Todos</option>
+                                <option value="entrega">Entrega</option>
+                                <option value="devolucao">Devolução</option>
+                            </select>
+                        </div>
+                        <div class="filter-item" style="width: 150px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="filter-date-start" style="font-size: 0.75rem; color: var(--text-secondary);">De</label>
+                            <input type="date" id="filter-date-start" style="padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; width: 100%;">
+                        </div>
+                        <div class="filter-item" style="width: 150px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="filter-date-end" style="font-size: 0.75rem; color: var(--text-secondary);">Até</label>
+                            <input type="date" id="filter-date-end" style="padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; width: 100%;">
+                        </div>
+                        <button class="btn btn-secondary btn-icon" id="clear-filters" title="Limpar Filtros" style="padding: 10px 12px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: var(--border-radius-sm);">
+                            <i class="ti ti-filter-off"></i>
+                        </button>
+                    </div>
+
+                    <!-- Tabela de Listagem -->
+                    <div class="table-container card-style" style="margin-top: 0; background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+                                    <th style="padding: 16px 20px;">Ref / ID</th>
+                                    <th style="padding: 16px 20px;">Tipo</th>
+                                    <th style="padding: 16px 20px;">Cliente</th>
+                                    <th style="padding: 16px 20px;">A/C (ATT)</th>
+                                    <th style="padding: 16px 20px;">Data / Hora</th>
+                                    <th style="padding: 16px 20px;">Valor Total</th>
+                                    <th style="padding: 16px 20px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receipts-list">
+                                <tr class="empty-state-row">
+                                    <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                                        Nenhum comprovante encontrado.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 6. TELA: NOVO COMPROVANTE (FORMULÁRIO) -->
+                <section id="view-novo-comprovante" class="app-view hidden">
+                    <div style="margin-bottom: 24px;">
+                        <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Novo Comprovante</h2>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">Preencha as informações para emitir o comprovante de entrega ou devolução</p>
+                    </div>
+
+                    <form id="receipt-form" novalidate style="display: flex; flex-direction: column; gap: 24px;">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                            <!-- Detalhes do Documento -->
+                            <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-file-text"></i> Informações Gerais</h3>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="receipt-doc-ref" style="font-size: 0.75rem; color: var(--text-secondary);">Referência / NF <span style="color: var(--danger);">*</span></label>
+                                        <input type="text" id="receipt-doc-ref" placeholder="Ex: NF-1002" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="receipt-type" style="font-size: 0.75rem; color: var(--text-secondary);">Tipo de Operação <span style="color: var(--danger);">*</span></label>
+                                        <select id="receipt-type" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                            <option value="entrega">Comprovante de Entrega</option>
+                                            <option value="devolucao">Comprovante de Devolução</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="form-date" style="font-size: 0.75rem; color: var(--text-secondary);">Data <span style="color: var(--danger);">*</span></label>
+                                        <input type="date" id="form-date" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="form-time" style="font-size: 0.75rem; color: var(--text-secondary);">Hora <span style="color: var(--danger);">*</span></label>
+                                        <input type="time" id="form-time" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dados do Destinatário -->
+                            <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-user"></i> Destinatário / Unidade</h3>
+                                <div class="input-group" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+                                    <label for="receipt-client" style="font-size: 0.75rem; color: var(--text-secondary);">Unidade de Saúde (Cliente) <span style="color: var(--danger);">*</span></label>
+                                    <input type="text" id="receipt-client" placeholder="Ex: Hospital Restauração" required list="clients-datalist" autocomplete="off" style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                </div>
+                                <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label for="receipt-att" style="font-size: 0.75rem; color: var(--text-secondary);">Aos Cuidados de (ATT)</label>
+                                    <input type="text" id="receipt-att" placeholder="Ex: Dra. Ana Souza" list="att-datalist" autocomplete="off" style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Materiais -->
+                        <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;"><i class="ti ti-box"></i> Equipamentos / Materiais</h3>
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-add-item" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.75rem;">
+                                    <i class="ti ti-plus"></i> Adicionar Item
+                                </button>
+                            </div>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid var(--border-color);">
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 80px;">Qtd</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary);">Descrição do Equipamento</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 160px;">Nº Série (N/S)</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 140px;">Valor Unitário</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 140px;">Valor Total</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 60px; text-align: center;">Excluir</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="form-items-body">
+                                        <!-- Linhas adicionadas dinamicamente via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Totalizadores e Extenso -->
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                                <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label for="receipt-val-extenso" style="font-size: 0.75rem; color: var(--text-secondary);">Valor por Extenso</label>
+                                    <input type="text" id="receipt-val-extenso" readonly style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: #fff; font-weight: 500; text-transform: uppercase; font-size: 11px;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Valor Geral Geral</span>
+                                    <span id="form-grand-total" style="font-size: 1.5rem; font-weight: 800; color: #fff;">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observações e Entregador -->
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                            <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-notes"></i> Observações</h3>
+                                <textarea id="receipt-notes" rows="3" placeholder="Ex: Equipamentos entregues em perfeito estado de funcionamento..." style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; resize: vertical;"></textarea>
+                            </div>
+                            <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-user-check"></i> Entregador</h3>
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="receipt-deliverer" style="font-size: 0.75rem; color: var(--text-secondary);">Nome do Entregador <span style="color: var(--danger);">*</span></label>
+                                        <input type="text" id="receipt-deliverer" value="Aldenis Marques" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rodapé de Ações do Form -->
+                        <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <button type="button" class="btn btn-secondary" id="btn-cancel-receipt" style="padding: 10px 24px;">Voltar</button>
+                            <button type="submit" class="btn btn-primary" id="btn-save-receipt" style="padding: 10px 24px; display: flex; align-items: center; gap: 8px;">
+                                <i class="ti ti-device-floppy"></i> Salvar Comprovante
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- 7. TELA: ENTRADA DE MATERIAL (LISTA) -->
+                <section id="view-entradas" class="app-view hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Entradas de Material</h2>
+                            <p style="font-size: 0.875rem; color: var(--text-secondary);">Gerencie as notas fiscais e recebimentos de estoque da NEWMED</p>
+                        </div>
+                        <button class="btn btn-success" id="btn-go-to-new-entrada" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="ti ti-plus" style="font-size: 16px;"></i> Registrar Entrada
+                        </button>
+                    </div>
+
+                    <!-- Filtros de Busca de Entradas -->
+                    <div class="filters-bar" style="background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
+                        <div class="filter-item" style="flex-grow: 1; min-width: 250px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="entrada-search-input" style="font-size: 0.75rem; color: var(--text-secondary);">Buscar</label>
+                            <div style="position: relative;">
+                                <i class="ti ti-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                                <input type="text" id="entrada-search-input" placeholder="NF/Ref, fornecedor, material..." style="width: 100%; padding: 10px 12px 10px 36px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                            </div>
+                        </div>
+                        <div class="filter-item" style="width: 180px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="entrada-filter-date-start" style="font-size: 0.75rem; color: var(--text-secondary);">De</label>
+                            <input type="date" id="entrada-filter-date-start" style="padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; width: 100%;">
+                        </div>
+                        <div class="filter-item" style="width: 180px; display: flex; flex-direction: column; gap: 4px;">
+                            <label for="entrada-filter-date-end" style="font-size: 0.75rem; color: var(--text-secondary);">Até</label>
+                            <input type="date" id="entrada-filter-date-end" style="padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; width: 100%;">
+                        </div>
+                        <button class="btn btn-secondary btn-icon" id="entrada-clear-filters" title="Limpar Filtros" style="padding: 10px 12px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: var(--border-radius-sm);">
+                            <i class="ti ti-filter-off"></i>
+                        </button>
+                    </div>
+
+                    <!-- Tabela de Listagem de Entradas -->
+                    <div class="table-container card-style" style="margin-top: 0; background: var(--bg-card); backdrop-filter: var(--blur-card); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+                                    <th style="padding: 16px 20px;">Ref / NF</th>
+                                    <th style="padding: 16px 20px;">Fornecedor / Origem</th>
+                                    <th style="padding: 16px 20px;">Recebido por</th>
+                                    <th style="padding: 16px 20px;">Data / Hora</th>
+                                    <th style="padding: 16px 20px;">Itens</th>
+                                    <th style="padding: 16px 20px;">Valor Total</th>
+                                    <th style="padding: 16px 20px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entradas-list">
+                                <tr class="empty-state-row">
+                                    <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                                        Nenhuma entrada de material encontrada.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 8. TELA: NOVA ENTRADA DE MATERIAL (FORMULÁRIO) -->
+                <section id="view-nova-entrada" class="app-view hidden">
+                    <div style="margin-bottom: 24px;">
+                        <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Registrar Entrada de Material</h2>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">Insira os detalhes do documento de entrada e materiais recebidos</p>
+                    </div>
+
+                    <form id="entrada-form" novalidate style="display: flex; flex-direction: column; gap: 24px;">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                            <!-- Detalhes da Entrada -->
+                            <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-file-import"></i> Dados da Nota/Ref</h3>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="entrada-doc-ref" style="font-size: 0.75rem; color: var(--text-secondary);">Ref / NF Entrada <span style="color: var(--danger);">*</span></label>
+                                        <input type="text" id="entrada-doc-ref" placeholder="Ex: NF-72615" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="entrada-source" style="font-size: 0.75rem; color: var(--text-secondary);">Fornecedor / Origem <span style="color: var(--danger);">*</span></label>
+                                        <input type="text" id="entrada-source" placeholder="Ex: Distribuidora Med-Life" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="entrada-date" style="font-size: 0.75rem; color: var(--text-secondary);">Data de Recebimento <span style="color: var(--danger);">*</span></label>
+                                        <input type="date" id="entrada-date" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; width: 100%;">
+                                    </div>
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label for="entrada-time" style="font-size: 0.75rem; color: var(--text-secondary);">Hora <span style="color: var(--danger);">*</span></label>
+                                        <input type="time" id="entrada-time" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Responsável -->
+                            <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-user-check"></i> Responsável</h3>
+                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+                                        <label for="entrada-receiver" style="font-size: 0.75rem; color: var(--text-secondary);">Nome do Recebedor <span style="color: var(--danger);">*</span></label>
+                                        <input type="text" id="entrada-receiver" placeholder="Carregando usuário..." required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Itens de Entrada -->
+                        <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;"><i class="ti ti-box"></i> Itens Recebidos</h3>
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-entrada-add-item" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.75rem;">
+                                    <i class="ti ti-plus"></i> Adicionar Item
+                                </button>
+                            </div>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid var(--border-color);">
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 80px;">Qtd</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary);">Descrição do Equipamento / Material</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 160px;">Nº Série (N/S)</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 140px;">Valor Unitário (Opcional)</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 140px;">Valor Total</th>
+                                            <th style="padding: 10px; font-size: 0.75rem; color: var(--text-secondary); width: 60px; text-align: center;">Excluir</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="entrada-items-body">
+                                        <!-- Linhas dinâmicas via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Totalizador da Entrada -->
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                                <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Valor Geral da Nota</span>
+                                    <span id="entrada-grand-total" style="font-size: 1.5rem; font-weight: 800; color: #fff;">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-notes"></i> Observações</h3>
+                            <textarea id="entrada-notes" rows="3" placeholder="Ex: Equipamentos recebidos com lacres originais intactos e manuais inclusos..." style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff; resize: vertical;"></textarea>
+                        </div>
+
+                        <!-- Ações do Form de Entrada -->
+                        <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <button type="button" class="btn btn-secondary" id="btn-cancel-entrada" style="padding: 10px 24px;">Voltar</button>
+                            <button type="submit" class="btn btn-success" id="btn-save-entrada" style="padding: 10px 24px; display: flex; align-items: center; gap: 8px;">
+                                <i class="ti ti-device-floppy"></i> Registrar Entrada
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
             </div>
         </main>
     </div>
@@ -986,10 +1368,47 @@
         </div>
     </div>
 
+    <!-- MODAL DE VISUALIZAÇÃO DE COMPROVANTES E ENTRADAS (Formatado estilo papel NEWMED) -->
+    <div class="modal" id="receipt-view-modal">
+        <div class="modal-content receipt-view-content" style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 20px; box-shadow: var(--shadow-lg); width: 90%; max-width: 850px; display: flex; flex-direction: column; overflow: hidden; max-height: 90vh;">
+            <div class="modal-header no-print" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: #fff; margin: 0;">Visualização do Documento</h3>
+                <div class="modal-header-actions" style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-primary" id="btn-print-receipt" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="ti ti-printer"></i> Imprimir / PDF
+                    </button>
+                    <button class="btn btn-success" id="btn-share-whatsapp" style="background-color: #25d366; border-color: #25d366; color: #ffffff; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="ti ti-brand-whatsapp"></i> Enviar pelo Zap
+                    </button>
+                    <button class="btn-close-modal" id="btn-close-view" style="background: transparent; border: none; outline: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;"><i class="ti ti-x"></i></button>
+                </div>
+            </div>
+            <div class="modal-body print-area" id="print-area" style="padding: 24px; overflow-y: auto; flex-grow: 1;">
+                <!-- Papel Timbrado NEWMED -->
+                <div class="receipt-paper" id="receipt-paper-target">
+                    <!-- EKG Heart Watermark -->
+                    <div class="receipt-watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); opacity: 0.035; pointer-events: none; z-index: 1;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="300" height="240">
+                            <path d="M10,80 L50,80 L60,50 L75,110 L90,70 L100,90 L110,80 L120,80 C130,50 170,50 180,80 C190,110 150,150 100,155 C50,150 10,110 20,80 Z" fill="none" stroke="#ef4444" stroke-width="6"/>
+                        </svg>
+                    </div>
+
+                    <!-- Conteúdo dinâmico do papel gerado via JS -->
+                    <div id="receipt-paper-content" style="position: relative; z-index: 2; color: #1f2937;">
+                        <!-- Injetado dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- DATALISTS PARA AUTOCOMPLETE (PREENCHIMENTO AUTOMÁTICO) -->
     <datalist id="clients-list"></datalist>
     <datalist id="executants-list"></datalist>
     <datalist id="types-list"></datalist>
+    <datalist id="clients-datalist"></datalist>
+    <datalist id="att-datalist"></datalist>
+    <datalist id="materials-datalist"></datalist>
 
 </body>
 </html>
