@@ -1410,5 +1410,29 @@
     <datalist id="att-datalist"></datalist>
     <datalist id="materials-datalist"></datalist>
 
+    <!-- SCRIPT DE LIMPEZA DE SERVICE WORKERS LEGADOS -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                let didUnregister = false;
+                for(let registration of registrations) {
+                    registration.unregister();
+                    didUnregister = true;
+                }
+                if (didUnregister) {
+                    console.log('Service Workers legados desregistrados com sucesso.');
+                    if ('caches' in window) {
+                        caches.keys().then(function(names) {
+                            for (let name of names) caches.delete(name);
+                        });
+                    }
+                    setTimeout(() => { window.location.reload(true); }, 500);
+                }
+            }).catch(function(err) {
+                console.warn('Erro ao limpar service workers:', err);
+            });
+        }
+    </script>
+
 </body>
 </html>
