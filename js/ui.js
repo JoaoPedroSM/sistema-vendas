@@ -2374,7 +2374,7 @@ function viewReceiptDetails(id) {
         </div>
         
         <!-- Painel de Assinaturas com borda azul e divisão -->
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif;">
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 16px;">
             <tr>
                 <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
                     <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
@@ -2390,6 +2390,11 @@ function viewReceiptDetails(id) {
                 </td>
             </tr>
         </table>
+
+        <!-- Rodapé Oficial NEWMED (Imagem Unificada) -->
+        <div style="text-align: center; margin-top: 16px;">
+            <img src="footer.png" alt="NEWMED Rodapé" style="width: 100%; display: block;">
+        </div>
     `;
     
     // Bind share
@@ -2765,7 +2770,7 @@ function viewEntradaDetails(id) {
         </div>
         
         <!-- Painel de Assinaturas com borda azul e divisão -->
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif;">
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 16px;">
             <tr>
                 <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
                     <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
@@ -2781,6 +2786,11 @@ function viewEntradaDetails(id) {
                 </td>
             </tr>
         </table>
+
+        <!-- Rodapé Oficial NEWMED (Imagem Unificada) -->
+        <div style="text-align: center; margin-top: 16px;">
+            <img src="footer.png" alt="NEWMED Rodapé" style="width: 100%; display: block;">
+        </div>
     `;
     
     // Hide whatsapp share button for incoming inventory
