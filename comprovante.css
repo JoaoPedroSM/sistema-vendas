@@ -104,7 +104,7 @@ body.light-theme #receipt-view-modal {
     background-color: #ffffff;
     color: #1f2937;
     border-radius: 0px;
-    padding: 0 0 30px 0;
+    padding: 30px 40px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     max-width: 100%;
     margin: 0 auto;
@@ -234,18 +234,9 @@ body.light-theme #receipt-view-modal {
    PRINT-ONLY OVERRIDES
    ========================================================================== */
 @media print {
-    @page {
-        size: A4 portrait;
-        margin: 0mm;
-    }
-    
-    html, body {
-        height: auto !important;
-        overflow: visible !important;
+    body {
         background-color: #ffffff !important;
         color: #000000 !important;
-        margin: 0 !important;
-        padding: 0 !important;
     }
     
     .app-container,
@@ -292,70 +283,5 @@ body.light-theme #receipt-view-modal {
         padding: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        font-size: 11px !important;
-        line-height: 1.25 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    
-    .receipt-paper * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    
-    .receipt-paper img[alt="NEWMED"] {
-        width: 100% !important;
-        height: auto !important;
-        max-height: none !important;
-        display: block !important;
-        margin: 0 !important;
-    }
-
-    .receipt-paper img[alt="NEWMED Rodapé"] {
-        width: 100% !important;
-        height: auto !important;
-        max-height: none !important;
-        display: block !important;
-        margin: 0 !important;
-        margin-top: 15px !important;
-    }
-    
-    .receipt-paper div[style*="padding: 0 40px"] {
-        padding: 0 35px !important;
-    }
-    
-    .receipt-paper table {
-        margin-bottom: 8px !important;
-        font-size: 10px !important;
-    }
-    
-    .receipt-paper td, 
-    .receipt-paper th {
-        padding: 4px 8px !important;
-    }
-    
-    .receipt-paper p {
-        margin-bottom: 6px !important;
-        font-size: 10px !important;
-    }
-    
-    .receipt-paper div[style*="margin-bottom: 20px"],
-    .receipt-paper div[style*="margin-bottom: 16px"] {
-        margin-bottom: 8px !important;
-    }
-    
-    .receipt-paper div[style*="margin-top: 20px"],
-    .receipt-paper div[style*="margin-top: 16px"] {
-        margin-top: 8px !important;
-    }
-
-    .receipt-paper table[style*="height: 110px"] {
-        height: 70px !important;
-    }
-    
-    .receipt-paper table[style*="height: 110px"] td {
-        padding: 8px !important;
     }
 }
