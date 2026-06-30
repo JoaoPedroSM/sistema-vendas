@@ -2289,110 +2289,112 @@ function viewReceiptDetails(id) {
     const paymentMethodText = r.paymentMethod || 'A COMBINAR';
 
     paperContent.innerHTML = `
-        <!-- Cabeçalho Oficial NEWMED (Imagem Unificada) -->
-        <div style="text-align: center; margin-bottom: 16px;">
+        <!-- Cabeçalho Oficial NEWMED (Imagem Unificada - Sangria Total) -->
+        <div style="text-align: center; margin-bottom: 20px;">
             <img src="header.png" alt="NEWMED" style="width: 100%; display: block;">
         </div>
         
-        <!-- Faixa de Título -->
-        <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
-            ${docTitle}
-        </div>
-        
-        <!-- Tabela de Cliente e ATT -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <tr style="border-bottom: 1px solid #0066b2;">
-                <td style="padding: 8px 12px; font-weight: 700; width: 80px; color: #333;">CLIENTE:</td>
-                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(r.client || '')}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px 12px; font-weight: 700; color: #333;">ATT.</td>
-                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(r.att || 'GERAL')}</td>
-            </tr>
-        </table>
-        
-        <!-- Frase Precedente -->
-        <p style="font-size: 12px; font-weight: 700; color: #333; margin-bottom: 12px; text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;">
-            ${precedingText}
-        </p>
-        
-        <!-- Tabela de Itens (Materiais) -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <thead>
-                <tr style="background-color: #0066b2; color: #ffffff;">
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 65px; text-align: center;">QUANT.</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; text-align: left;">MATERIAL</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 140px; text-align: center;">N/S</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR UNITÁRIO</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR TOTAL</th>
+        <div style="padding: 0 40px;">
+            <!-- Faixa de Título -->
+            <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
+                ${docTitle}
+            </div>
+            
+            <!-- Tabela de Cliente e ATT -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <tr style="border-bottom: 1px solid #0066b2;">
+                    <td style="padding: 8px 12px; font-weight: 700; width: 80px; color: #333;">CLIENTE:</td>
+                    <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(r.client || '')}</td>
                 </tr>
-            </thead>
-            <tbody>
-                ${(r.items || []).map(item => `
-                    <tr>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; font-weight: 700; color: #111;">${item.qty}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; font-weight: 700; color: #111;">${escapeHTML(item.desc || '')}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; color: #4b5563; font-weight: 600;">${escapeHTML(item.serial || 'N/S')}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 600; color: #111;">R$ ${(item.valUnit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 700; color: #111;">R$ ${(item.valTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: 700; color: #333;">ATT.</td>
+                    <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(r.att || 'GERAL')}</td>
+                </tr>
+            </table>
+            
+            <!-- Frase Precedente -->
+            <p style="font-size: 12px; font-weight: 700; color: #333; margin-bottom: 12px; text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;">
+                ${precedingText}
+            </p>
+            
+            <!-- Tabela de Itens (Materiais) -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <thead>
+                    <tr style="background-color: #0066b2; color: #ffffff;">
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 65px; text-align: center;">QUANT.</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; text-align: left;">MATERIAL</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 140px; text-align: center;">N/S</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR UNITÁRIO</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR TOTAL</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        
-        <!-- Condições Gerais e Observações -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <tr style="background-color: #0066b2; color: #ffffff;">
-                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
-                    ${condTitle}
-                </td>
-            </tr>
-            <tr style="border-bottom: 1px solid #0066b2;">
-                <td colspan="2" style="padding: 8px 12px; color: #111; line-height: 1.5; font-weight: 700;">
-                    ${valLabel} R$ ${(r.grandTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} : (${escapeHTML(r.valExtenso || 'ZERO REAIS').toUpperCase()})
-                </td>
-            </tr>
-            <tr style="background-color: #0066b2; color: #ffffff;">
-                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
-                    FORMA DE PAGAMENTO:
-                </td>
-            </tr>
-            <tr style="border-bottom: 1px solid #0066b2;">
-                <td colspan="2" style="padding: 8px 12px; color: #111; font-weight: 700; text-transform: uppercase;">
-                    ${escapeHTML(paymentMethodText)}
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 8px 12px; width: 110px; font-weight: 700; color: #ef4444; vertical-align: top;">OBSERVAÇÕES:</td>
-                <td style="padding: 8px 12px; color: #ef4444; font-weight: 700; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(r.notes || '************************************************************************************************************************')}</td>
-            </tr>
-        </table>
-        
-        <!-- Faixa de Cidade e Data -->
-        <div style="background-color: #0066b2; color: #ffffff; padding: 6px 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
-            ${dateFormatted}.
+                </thead>
+                <tbody>
+                    ${(r.items || []).map(item => `
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; font-weight: 700; color: #111;">${item.qty}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; font-weight: 700; color: #111;">${escapeHTML(item.desc || '')}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; color: #4b5563; font-weight: 600;">${escapeHTML(item.serial || 'N/S')}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 600; color: #111;">R$ ${(item.valUnit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 700; color: #111;">R$ ${(item.valTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            <!-- Condições Gerais e Observações -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <tr style="background-color: #0066b2; color: #ffffff;">
+                    <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                        ${condTitle}
+                    </td>
+                </tr>
+                <tr style="border-bottom: 1px solid #0066b2;">
+                    <td colspan="2" style="padding: 8px 12px; color: #111; line-height: 1.5; font-weight: 700;">
+                        ${valLabel} R$ ${(r.grandTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} : (${escapeHTML(r.valExtenso || 'ZERO REAIS').toUpperCase()})
+                    </td>
+                </tr>
+                <tr style="background-color: #0066b2; color: #ffffff;">
+                    <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                        FORMA DE PAGAMENTO:
+                    </td>
+                </tr>
+                <tr style="border-bottom: 1px solid #0066b2;">
+                    <td colspan="2" style="padding: 8px 12px; color: #111; font-weight: 700; text-transform: uppercase;">
+                        ${escapeHTML(paymentMethodText)}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 12px; width: 110px; font-weight: 700; color: #ef4444; vertical-align: top;">OBSERVAÇÕES:</td>
+                    <td style="padding: 8px 12px; color: #ef4444; font-weight: 700; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(r.notes || '************************************************************************************************************************')}</td>
+                </tr>
+            </table>
+            
+            <!-- Faixa de Cidade e Data -->
+            <div style="background-color: #0066b2; color: #ffffff; padding: 6px 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
+                ${dateFormatted}.
+            </div>
+            
+            <!-- Painel de Assinaturas com borda azul e divisão -->
+            <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <tr>
+                    <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
+                        <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                        <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                            ${leftSignLabel}
+                        </div>
+                    </td>
+                    <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 16px;">
+                        <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                        <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                            ${rightSignLabel}
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
-        
-        <!-- Painel de Assinaturas com borda azul e divisão -->
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 16px;">
-            <tr>
-                <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
-                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
-                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
-                        ${leftSignLabel}
-                    </div>
-                </td>
-                <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 16px;">
-                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
-                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
-                        ${rightSignLabel}
-                    </div>
-                </td>
-            </tr>
-        </table>
 
-        <!-- Rodapé Oficial NEWMED (Imagem Unificada) -->
-        <div style="text-align: center; margin-top: 16px;">
+        <!-- Rodapé Oficial NEWMED (Imagem Unificada - Sangria Total) -->
+        <div style="text-align: center; margin-top: 20px;">
             <img src="footer.png" alt="NEWMED Rodapé" style="width: 100%; display: block;">
         </div>
     `;
@@ -2685,110 +2687,112 @@ function viewEntradaDetails(id) {
     }
     
     paperContent.innerHTML = `
-        <!-- Cabeçalho Oficial NEWMED (Imagem Unificada) -->
-        <div style="text-align: center; margin-bottom: 16px;">
+        <!-- Cabeçalho Oficial NEWMED (Imagem Unificada - Sangria Total) -->
+        <div style="text-align: center; margin-bottom: 20px;">
             <img src="header.png" alt="NEWMED" style="width: 100%; display: block;">
         </div>
         
-        <!-- Faixa de Título -->
-        <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
-            REGISTRO DE ENTRADA DE MATERIAL
-        </div>
-        
-        <!-- Tabela de Fornecedor e Responsável -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <tr style="border-bottom: 1px solid #0066b2;">
-                <td style="padding: 8px 12px; font-weight: 700; width: 170px; color: #333;">FORNECEDOR / ORIGEM:</td>
-                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(ent.source || '')}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px 12px; font-weight: 700; color: #333;">RECEBIDO POR:</td>
-                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(ent.receiver || '')}</td>
-            </tr>
-        </table>
-        
-        <!-- Frase Precedente -->
-        <p style="font-size: 12px; font-weight: 700; color: #333; margin-bottom: 12px; text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;">
-            CONFORME NOTA FISCAL / REFERÊNCIA, REGISTRAMOS A ENTRADA EM ESTOQUE DO SEGUINTE MATERIAL:
-        </p>
-        
-        <!-- Tabela de Itens (Materiais) -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <thead>
-                <tr style="background-color: #0066b2; color: #ffffff;">
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 65px; text-align: center;">QUANT.</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; text-align: left;">MATERIAL</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 140px; text-align: center;">N/S</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR UNITÁRIO</th>
-                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR TOTAL</th>
+        <div style="padding: 0 40px;">
+            <!-- Faixa de Título -->
+            <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
+                REGISTRO DE ENTRADA DE MATERIAL
+            </div>
+            
+            <!-- Tabela de Fornecedor e Responsável -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <tr style="border-bottom: 1px solid #0066b2;">
+                    <td style="padding: 8px 12px; font-weight: 700; width: 170px; color: #333;">FORNECEDOR / ORIGEM:</td>
+                    <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(ent.source || '')}</td>
                 </tr>
-            </thead>
-            <tbody>
-                ${(ent.items || []).map(item => `
-                    <tr>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; font-weight: 700; color: #111;">${item.qty}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; font-weight: 700; color: #111;">${escapeHTML(item.desc || '')}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; color: #4b5563; font-weight: 600;">${escapeHTML(item.serial || 'N/S')}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 600; color: #111;">R$ ${(item.valUnit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 700; color: #111;">R$ ${(item.valTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: 700; color: #333;">RECEBIDO POR:</td>
+                    <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(ent.receiver || '')}</td>
+                </tr>
+            </table>
+            
+            <!-- Frase Precedente -->
+            <p style="font-size: 12px; font-weight: 700; color: #333; margin-bottom: 12px; text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;">
+                CONFORME NOTA FISCAL / REFERÊNCIA, REGISTRAMOS A ENTRADA EM ESTOQUE DO SEGUINTE MATERIAL:
+            </p>
+            
+            <!-- Tabela de Itens (Materiais) -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <thead>
+                    <tr style="background-color: #0066b2; color: #ffffff;">
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 65px; text-align: center;">QUANT.</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; text-align: left;">MATERIAL</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 140px; text-align: center;">N/S</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR UNITÁRIO</th>
+                        <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR TOTAL</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        
-        <!-- Condições Gerais e Observações -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <tr style="background-color: #0066b2; color: #ffffff;">
-                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
-                    CONDIÇÕES GERAIS DESTA ENTRADA:
-                </td>
-            </tr>
-            <tr style="border-bottom: 1px solid #0066b2;">
-                <td colspan="2" style="padding: 8px 12px; color: #111; line-height: 1.5; font-weight: 700;">
-                    VALOR TOTAL DA ENTRADA: R$ ${(ent.grandTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
-            </tr>
-            <tr style="background-color: #0066b2; color: #ffffff;">
-                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
-                    REFERÊNCIA / NOTA FISCAL:
-                </td>
-            </tr>
-            <tr style="border-bottom: 1px solid #0066b2;">
-                <td colspan="2" style="padding: 8px 12px; color: #111; font-weight: 700; text-transform: uppercase;">
-                    ${escapeHTML(ent.ref || '')}
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 8px 12px; width: 110px; font-weight: 700; color: #ef4444; vertical-align: top;">OBSERVAÇÕES:</td>
-                <td style="padding: 8px 12px; color: #ef4444; font-weight: 700; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(ent.notes || '************************************************************************************************************************')}</td>
-            </tr>
-        </table>
-        
-        <!-- Faixa de Cidade e Data -->
-        <div style="background-color: #0066b2; color: #ffffff; padding: 6px 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
-            ${dateFormatted}.
+                </thead>
+                <tbody>
+                    ${(ent.items || []).map(item => `
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; font-weight: 700; color: #111;">${item.qty}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; font-weight: 700; color: #111;">${escapeHTML(item.desc || '')}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; color: #4b5563; font-weight: 600;">${escapeHTML(item.serial || 'N/S')}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 600; color: #111;">R$ ${(item.valUnit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 700; color: #111;">R$ ${(item.valTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            <!-- Condições Gerais e Observações -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <tr style="background-color: #0066b2; color: #ffffff;">
+                    <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                        CONDIÇÕES GERAIS DESTA ENTRADA:
+                    </td>
+                </tr>
+                <tr style="border-bottom: 1px solid #0066b2;">
+                    <td colspan="2" style="padding: 8px 12px; color: #111; line-height: 1.5; font-weight: 700;">
+                        VALOR TOTAL DA ENTRADA: R$ ${(ent.grandTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                </tr>
+                <tr style="background-color: #0066b2; color: #ffffff;">
+                    <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                        REFERÊNCIA / NOTA FISCAL:
+                    </td>
+                </tr>
+                <tr style="border-bottom: 1px solid #0066b2;">
+                    <td colspan="2" style="padding: 8px 12px; color: #111; font-weight: 700; text-transform: uppercase;">
+                        ${escapeHTML(ent.ref || '')}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 12px; width: 110px; font-weight: 700; color: #ef4444; vertical-align: top;">OBSERVAÇÕES:</td>
+                    <td style="padding: 8px 12px; color: #ef4444; font-weight: 700; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(ent.notes || '************************************************************************************************************************')}</td>
+                </tr>
+            </table>
+            
+            <!-- Faixa de Cidade e Data -->
+            <div style="background-color: #0066b2; color: #ffffff; padding: 6px 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
+                ${dateFormatted}.
+            </div>
+            
+            <!-- Painel de Assinaturas com borda azul e divisão -->
+            <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 16px;">
+                <tr>
+                    <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
+                        <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                        <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                            RESPONSÁVEL PELA ENTREGA / ENTREGADOR
+                        </div>
+                    </td>
+                    <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 16px;">
+                        <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                        <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                            RESPONSÁVEL PELO RECEBIMENTO NEWMED
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
-        
-        <!-- Painel de Assinaturas com borda azul e divisão -->
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 16px;">
-            <tr>
-                <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
-                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
-                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
-                        RESPONSÁVEL PELA ENTREGA / ENTREGADOR
-                    </div>
-                </td>
-                <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 16px;">
-                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
-                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
-                        RESPONSÁVEL PELO RECEBIMENTO NEWMED
-                    </div>
-                </td>
-            </tr>
-        </table>
 
-        <!-- Rodapé Oficial NEWMED (Imagem Unificada) -->
-        <div style="text-align: center; margin-top: 16px;">
+        <!-- Rodapé Oficial NEWMED (Imagem Unificada - Sangria Total) -->
+        <div style="text-align: center; margin-top: 20px;">
             <img src="footer.png" alt="NEWMED Rodapé" style="width: 100%; display: block;">
         </div>
     `;
