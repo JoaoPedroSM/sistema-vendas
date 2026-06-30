@@ -2141,6 +2141,7 @@ function handleFormSubmitComprovantes(e) {
     const time = document.getElementById('form-time').value;
     const client = document.getElementById('receipt-client').value.trim();
     const att = document.getElementById('receipt-att').value.trim();
+    const paymentMethod = document.getElementById('receipt-payment-method')?.value.trim() || 'A COMBINAR';
     const notes = document.getElementById('receipt-notes').value.trim();
     const deliverer = document.getElementById('receipt-deliverer').value.trim();
     
@@ -2149,7 +2150,7 @@ function handleFormSubmitComprovantes(e) {
     
     const receipt = {
         id: 'cmp_' + Date.now(),
-        ref, type, date, time, client, att, items, grandTotal, valExtenso, notes, deliverer
+        ref, type, date, time, client, att, paymentMethod, items, grandTotal, valExtenso, notes, deliverer
     };
     
     if (addReceipt(receipt)) {
@@ -2260,100 +2261,156 @@ function viewReceiptDetails(id) {
     const paperContent = document.getElementById('receipt-paper-content');
     if (!paperContent) return;
     
-    const dateFormatted = (r.date || '').split('-').reverse().join('/');
-    const docTitle = (r.type || 'entrega') === 'entrega' ? 'COMPROVANTE DE ENTREGA' : 'COMPROVANTE DE DEVOLUÇÃO';
+    // Format date in Portuguese, e.g., "OLINDA, 02 DE MAIO DE 2024."
+    const dateParts = (r.date || '').split('-');
+    let dateFormatted = '';
+    if (dateParts.length === 3) {
+        const year = dateParts[0];
+        const monthNum = parseInt(dateParts[1], 10);
+        const day = dateParts[2];
+        const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+        const monthName = months[monthNum - 1] || 'JANEIRO';
+        dateFormatted = `OLINDA, ${day} DE ${monthName} DE ${year}`;
+    } else {
+        dateFormatted = 'OLINDA, ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+    }
     
+    const docTitle = (r.type || 'entrega') === 'entrega' ? 'COMPROVANTE DE ENTREGA' : 'COMPROVANTE DE DEVOLUÇÃO';
+    const precedingText = (r.type || 'entrega') === 'entrega' 
+        ? 'CONFORME SOLICITAÇÃO, ESTAMOS ENTREGANDO A ESTA UNIDADE DE SAÚDE O SEGUINTE MATERIAL:'
+        : 'CONFORME SOLICITAÇÃO, ESTAMOS RECEBENDO DE VOLTA DESTA UNIDADE DE SAÚDE O SEGUINTE MATERIAL:';
+        
+    const condTitle = (r.type || 'entrega') === 'entrega' ? 'CONDIÇÕES GERAIS DESTA ENTREGA:' : 'CONDIÇÕES GERAIS DESTA DEVOLUÇÃO:';
+    const valLabel = (r.type || 'entrega') === 'entrega' ? 'VALOR DESTA ENTREGA:' : 'VALOR DESTA DEVOLUÇÃO:';
+    
+    const leftSignLabel = (r.type || 'entrega') === 'entrega' ? 'RESPONSÁVEL PELA ENTREGA DA NEWMED' : 'RESPONSÁVEL PELO RECEBIMENTO DA NEWMED';
+    const rightSignLabel = (r.type || 'entrega') === 'entrega' ? 'RESPONSÁVEL PELO RECEBIMENTO NA UNIDADE' : 'RESPONSÁVEL PELA DEVOLUÇÃO NA UNIDADE';
+
+    const paymentMethodText = r.paymentMethod || 'A COMBINAR';
+
     paperContent.innerHTML = `
-        <table class="receipt-header-table">
+        <!-- Cabeçalho Oficial NEWMED -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
             <tr>
-                <td class="receipt-logo-container">
-                    <img src="header.png" alt="NEWMED" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
+                <td style="width: 45%; vertical-align: middle;">
+                    <img src="header.png" alt="NEWMED" style="height: 65px; max-width: 100%; object-fit: contain;" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
                 </td>
-                <td style="text-align: right; font-size: 12px; color: #4b5563;">
-                    <strong>NEWMED MEDICINA LTDA</strong><br>
-                    Suporte & Assistência Técnica Especializada<br>
-                    Fone: (81) 98132-0056 | Recife-PE
+                <td style="text-align: right; vertical-align: middle; font-family: sans-serif; font-size: 11px; color: #555; line-height: 1.4;">
+                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">Venda, Assistência e locação</span><br>
+                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">de Equipamentos Médico-Hospitalares</span><br>
+                    <strong style="color: #333;">Aldenis Marques</strong><br>
+                    Fones: (81) 99656.0780<br>
+                    E-mail: aldenis@newmedequipamentos.com.br
                 </td>
             </tr>
         </table>
         
-        <div class="receipt-title-band">${docTitle}</div>
+        <!-- Linha divisória horizontal azul do cabeçalho -->
+        <div style="height: 3px; background-color: #0066b2; margin-bottom: 16px;"></div>
         
-        <div class="receipt-grid-2">
-            <div>
-                <div class="receipt-field"><strong>Referência / NF:</strong> ${escapeHTML(r.ref || '')}</div>
-                <div class="receipt-field"><strong>Destinatário:</strong> ${escapeHTML(r.client || '')}</div>
-                <div class="receipt-field"><strong>Aos cuidados (ATT):</strong> ${escapeHTML(r.att || 'Geral')}</div>
-            </div>
-            <div style="text-align: right;">
-                <div class="receipt-field"><strong>Data de Emissão:</strong> ${dateFormatted}</div>
-                <div class="receipt-field"><strong>Hora de Emissão:</strong> ${escapeHTML(r.time || '')}</div>
-                <div class="receipt-field"><strong>Entregador/Técnico:</strong> ${escapeHTML(r.deliverer || '')}</div>
-            </div>
+        <!-- Faixa de Título -->
+        <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
+            ${docTitle}
         </div>
         
-        <div class="receipt-section-title">Relação de Materiais / Equipamentos</div>
-        <table class="receipt-table">
+        <!-- Tabela de Cliente e ATT -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <tr style="border-bottom: 1px solid #0066b2;">
+                <td style="padding: 8px 12px; font-weight: 700; width: 80px; color: #333;">CLIENTE:</td>
+                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(r.client || '')}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 12px; font-weight: 700; color: #333;">ATT.</td>
+                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(r.att || 'GERAL')}</td>
+            </tr>
+        </table>
+        
+        <!-- Frase Precedente -->
+        <p style="font-size: 12px; font-weight: 700; color: #333; margin-bottom: 12px; text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;">
+            ${precedingText}
+        </p>
+        
+        <!-- Tabela de Itens (Materiais) -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
             <thead>
-                <tr>
-                    <th style="width: 50px; text-align: center;">Qtd</th>
-                    <th>Descrição do Equipamento</th>
-                    <th style="width: 150px; text-align: center;">Nº Série (N/S)</th>
-                    <th style="width: 120px; text-align: right;">Val. Unitário</th>
-                    <th style="width: 120px; text-align: right;">Val. Total</th>
+                <tr style="background-color: #0066b2; color: #ffffff;">
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 65px; text-align: center;">QUANT.</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; text-align: left;">MATERIAL</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 140px; text-align: center;">N/S</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR UNITÁRIO</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR TOTAL</th>
                 </tr>
             </thead>
             <tbody>
                 ${(r.items || []).map(item => `
                     <tr>
-                        <td style="text-align: center;">${item.qty}</td>
-                        <td style="font-weight: 600;">${escapeHTML(item.desc || '')}</td>
-                        <td style="text-align: center; color: #4b5563;">${escapeHTML(item.serial || 'N/A')}</td>
-                        <td style="text-align: right;">${(item.valUnit || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td style="text-align: right; font-weight: 700;">${(item.valTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; font-weight: 700; color: #111;">${item.qty}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; font-weight: 700; color: #111;">${escapeHTML(item.desc || '')}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; color: #4b5563; font-weight: 600;">${escapeHTML(item.serial || 'N/S')}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 600; color: #111;">R$ ${(item.valUnit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 700; color: #111;">R$ ${(item.valTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                 `).join('')}
             </tbody>
         </table>
         
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 16px;">
-            <div style="max-width: 60%;">
-                <div class="receipt-field"><strong>Valor por Extenso:</strong></div>
-                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #374151; background-color: #f3f4f6; padding: 6px 10px; border-radius: 4px; border: 1px dashed #d1d5db;">
-                    ${escapeHTML(r.valExtenso || '')}
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <span style="font-size: 11px; color: #4b5563; display: block; margin-bottom: 2px;">Valor Geral Declarado</span>
-                <strong style="font-size: 18px; color: #0066b2; font-family: 'Outfit', sans-serif;">${(r.grandTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
-            </div>
+        <!-- Condições Gerais e Observações -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <tr style="background-color: #0066b2; color: #ffffff;">
+                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                    ${condTitle}
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #0066b2;">
+                <td colspan="2" style="padding: 8px 12px; color: #111; line-height: 1.5; font-weight: 700;">
+                    ${valLabel} R$ ${(r.grandTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} : (${escapeHTML(r.valExtenso || 'ZERO REAIS').toUpperCase()})
+                </td>
+            </tr>
+            <tr style="background-color: #0066b2; color: #ffffff;">
+                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                    FORMA DE PAGAMENTO:
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #0066b2;">
+                <td colspan="2" style="padding: 8px 12px; color: #111; font-weight: 700; text-transform: uppercase;">
+                    ${escapeHTML(paymentMethodText)}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 12px; width: 110px; font-weight: 700; color: #ef4444; vertical-align: top;">OBSERVAÇÕES:</td>
+                <td style="padding: 8px 12px; color: #ef4444; font-weight: 700; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(r.notes || '************************************************************************************************************************')}</td>
+            </tr>
+        </table>
+        
+        <!-- Faixa de Cidade e Data -->
+        <div style="background-color: #0066b2; color: #ffffff; padding: 6px 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
+            ${dateFormatted}.
         </div>
         
-        ${r.notes ? `
-            <div class="receipt-section-title">Observações do Atendimento</div>
-            <div style="font-size: 12px; color: #4b5563; background-color: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; white-space: pre-wrap;">${escapeHTML(r.notes)}</div>
-        ` : ''}
-        
-        <div class="receipt-signatures-panel">
-            <div class="receipt-signature-col">
-                <div style="height: 45px;"></div>
-                <div class="receipt-signature-line-label">Assinatura do Recebedor / Carimbo</div>
-            </div>
-            <div class="receipt-signature-col">
-                <div style="height: 45px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 600; color: #374151;">${escapeHTML(r.deliverer)}</div>
-                <div class="receipt-signature-line-label">Responsável NEWMED</div>
-            </div>
-        </div>
-        
-        <div class="newmed-footer">
-            NEWMED MEDICINA LTDA | Av. Agamenon Magalhães, Recife-PE | Suporte Técnico e Comercial
-        </div>
+        <!-- Painel de Assinaturas com borda azul e divisão -->
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <tr>
+                <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
+                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                        ${leftSignLabel}
+                    </div>
+                </td>
+                <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 16px;">
+                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                        ${rightSignLabel}
+                    </div>
+                </td>
+            </tr>
+        </table>
     `;
     
     // Bind share
     const zapBtn = document.getElementById('btn-share-whatsapp');
     if (zapBtn) {
         zapBtn.onclick = () => shareReceiptWhatsApp(r.id);
+        zapBtn.style.display = 'inline-flex';
     }
     
     const modal = document.getElementById('receipt-view-modal');
@@ -2622,80 +2679,136 @@ function viewEntradaDetails(id) {
     const paperContent = document.getElementById('receipt-paper-content');
     if (!paperContent) return;
     
-    const dateFormatted = (ent.date || '').split('-').reverse().join('/');
+    // Format date, e.g., "OLINDA, 02 DE MAIO DE 2024."
+    const dateParts = (ent.date || '').split('-');
+    let dateFormatted = '';
+    if (dateParts.length === 3) {
+        const year = dateParts[0];
+        const monthNum = parseInt(dateParts[1], 10);
+        const day = dateParts[2];
+        const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+        const monthName = months[monthNum - 1] || 'JANEIRO';
+        dateFormatted = `OLINDA, ${day} DE ${monthName} DE ${year}`;
+    } else {
+        dateFormatted = 'OLINDA, ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+    }
     
     paperContent.innerHTML = `
-        <table class="receipt-header-table">
+        <!-- Cabeçalho Oficial NEWMED -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
             <tr>
-                <td class="receipt-logo-container">
-                    <img src="header.png" alt="NEWMED" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
+                <td style="width: 45%; vertical-align: middle;">
+                    <img src="header.png" alt="NEWMED" style="height: 65px; max-width: 100%; object-fit: contain;" onerror="this.src='https://placehold.co/250x60/0066b2/ffffff?text=NEWMED';">
                 </td>
-                <td style="text-align: right; font-size: 12px; color: #4b5563;">
-                    <strong>NEWMED MEDICINA LTDA</strong><br>
-                    Controle de Estoque & Recebimentos<br>
-                    Fone: (81) 98132-0056 | Recife-PE
+                <td style="text-align: right; vertical-align: middle; font-family: sans-serif; font-size: 11px; color: #555; line-height: 1.4;">
+                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">Venda, Assistência e locação</span><br>
+                    <span style="color: #0066b2; font-weight: 700; font-size: 13px;">de Equipamentos Médico-Hospitalares</span><br>
+                    <strong style="color: #333;">Aldenis Marques</strong><br>
+                    Fones: (81) 99656.0780<br>
+                    E-mail: aldenis@newmedequipamentos.com.br
                 </td>
             </tr>
         </table>
         
-        <div class="receipt-title-band" style="background-color: #10b981;">REGISTRO DE ENTRADA DE MATERIAL</div>
+        <!-- Linha divisória horizontal azul do cabeçalho -->
+        <div style="height: 3px; background-color: #0066b2; margin-bottom: 16px;"></div>
         
-        <div class="receipt-grid-2">
-            <div>
-                <div class="receipt-field"><strong>Ref / NF Entrada:</strong> ${escapeHTML(ent.ref || '')}</div>
-                <div class="receipt-field"><strong>Fornecedor / Origem:</strong> ${escapeHTML(ent.source || '')}</div>
-            </div>
-            <div style="text-align: right;">
-                <div class="receipt-field"><strong>Data de Recebimento:</strong> ${dateFormatted}</div>
-                <div class="receipt-field"><strong>Hora de Recebimento:</strong> ${escapeHTML(ent.time || '')}</div>
-                <div class="receipt-field"><strong>Recebido por:</strong> ${escapeHTML(ent.receiver || '')}</div>
-            </div>
+        <!-- Faixa de Título -->
+        <div style="background-color: #0066b2; color: #ffffff; text-align: center; padding: 8px; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
+            REGISTRO DE ENTRADA DE MATERIAL
         </div>
         
-        <div class="receipt-section-title">Lista de Materiais Incorporados</div>
-        <table class="receipt-table">
+        <!-- Tabela de Fornecedor e Responsável -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <tr style="border-bottom: 1px solid #0066b2;">
+                <td style="padding: 8px 12px; font-weight: 700; width: 170px; color: #333;">FORNECEDOR / ORIGEM:</td>
+                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(ent.source || '')}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 12px; font-weight: 700; color: #333;">RECEBIDO POR:</td>
+                <td style="padding: 8px 12px; color: #111; font-weight: 700;">${escapeHTML(ent.receiver || '')}</td>
+            </tr>
+        </table>
+        
+        <!-- Frase Precedente -->
+        <p style="font-size: 12px; font-weight: 700; color: #333; margin-bottom: 12px; text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;">
+            CONFORME NOTA FISCAL / REFERÊNCIA, REGISTRAMOS A ENTRADA EM ESTOQUE DO SEGUINTE MATERIAL:
+        </p>
+        
+        <!-- Tabela de Itens (Materiais) -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
             <thead>
-                <tr>
-                    <th style="width: 50px; text-align: center;">Qtd</th>
-                    <th>Descrição do Equipamento / Material</th>
-                    <th style="width: 150px; text-align: center;">Nº Série (N/S)</th>
-                    <th style="width: 120px; text-align: right;">Val. Unitário</th>
-                    <th style="width: 120px; text-align: right;">Val. Total</th>
+                <tr style="background-color: #0066b2; color: #ffffff;">
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 65px; text-align: center;">QUANT.</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; text-align: left;">MATERIAL</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 140px; text-align: center;">N/S</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR UNITÁRIO</th>
+                    <th style="padding: 6px 10px; border: 1px solid #0066b2; width: 120px; text-align: right;">VALOR TOTAL</th>
                 </tr>
             </thead>
             <tbody>
                 ${(ent.items || []).map(item => `
                     <tr>
-                        <td style="text-align: center;">${item.qty}</td>
-                        <td style="font-weight: 600;">${escapeHTML(item.desc || '')}</td>
-                        <td style="text-align: center; color: #4b5563;">${escapeHTML(item.serial || 'N/A')}</td>
-                        <td style="text-align: right;">${(item.valUnit || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td style="text-align: right; font-weight: 700;">${(item.valTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; font-weight: 700; color: #111;">${item.qty}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; font-weight: 700; color: #111;">${escapeHTML(item.desc || '')}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: center; color: #4b5563; font-weight: 600;">${escapeHTML(item.serial || 'N/S')}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 600; color: #111;">R$ ${(item.valUnit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td style="padding: 6px 10px; border: 1px solid #0066b2; text-align: right; font-weight: 700; color: #111;">R$ ${(item.valTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                 `).join('')}
             </tbody>
         </table>
         
-        <div style="text-align: right; margin-top: 16px;">
-            <span style="font-size: 11px; color: #4b5563; display: block; margin-bottom: 2px;">Valor Total da Entrada</span>
-            <strong style="font-size: 18px; color: #10b981; font-family: 'Outfit', sans-serif;">${(ent.grandTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+        <!-- Condições Gerais e Observações -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; border: 1px solid #0066b2; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <tr style="background-color: #0066b2; color: #ffffff;">
+                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                    CONDIÇÕES GERAIS DESTA ENTRADA:
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #0066b2;">
+                <td colspan="2" style="padding: 8px 12px; color: #111; line-height: 1.5; font-weight: 700;">
+                    VALOR TOTAL DA ENTRADA: R$ ${(ent.grandTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+            </tr>
+            <tr style="background-color: #0066b2; color: #ffffff;">
+                <td colspan="2" style="padding: 6px 12px; font-weight: 700; text-transform: uppercase;">
+                    REFERÊNCIA / NOTA FISCAL:
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #0066b2;">
+                <td colspan="2" style="padding: 8px 12px; color: #111; font-weight: 700; text-transform: uppercase;">
+                    ${escapeHTML(ent.ref || '')}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 12px; width: 110px; font-weight: 700; color: #ef4444; vertical-align: top;">OBSERVAÇÕES:</td>
+                <td style="padding: 8px 12px; color: #ef4444; font-weight: 700; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(ent.notes || '************************************************************************************************************************')}</td>
+            </tr>
+        </table>
+        
+        <!-- Faixa de Cidade e Data -->
+        <div style="background-color: #0066b2; color: #ffffff; padding: 6px 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
+            ${dateFormatted}.
         </div>
         
-        ${ent.notes ? `
-            <div class="receipt-section-title">Observações Internas</div>
-            <div style="font-size: 12px; color: #4b5563; background-color: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; white-space: pre-wrap;">${escapeHTML(ent.notes)}</div>
-        ` : ''}
-        
-        <div class="receipt-signatures-panel" style="margin-top: 50px;">
-            <div class="receipt-signature-col" style="grid-column: 1 / span 2; max-width: 300px; margin: 0 auto;">
-                <div style="height: 45px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 600; color: #374151;">${escapeHTML(ent.receiver)}</div>
-                <div class="receipt-signature-line-label">Responsável pelo Recebimento</div>
-            </div>
-        </div>
-        
-        <div class="newmed-footer">
-            NEWMED MEDICINA LTDA | Relatório Interno de Entrada de Inventário
-        </div>
+        <!-- Painel de Assinaturas com borda azul e divisão -->
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #0066b2; height: 110px; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <tr>
+                <td style="width: 50%; border-right: 2px solid #0066b2; text-align: center; vertical-align: bottom; padding: 16px;">
+                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                        RESPONSÁVEL PELA ENTREGA / ENTREGADOR
+                    </div>
+                </td>
+                <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 16px;">
+                    <div style="width: 80%; margin: 0 auto; border-top: 1px solid #333; margin-bottom: 6px;"></div>
+                    <div style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase;">
+                        RESPONSÁVEL PELO RECEBIMENTO NEWMED
+                    </div>
+                </td>
+            </tr>
+        </table>
     `;
     
     // Hide whatsapp share button for incoming inventory
