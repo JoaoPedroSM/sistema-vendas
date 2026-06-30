@@ -5,7 +5,7 @@
  */
 
 import { hasRegisteredUsers, registerUser, loginUser, logoutUser, getCurrentUser } from './auth.js';
-import { bindUIEvents, navigateTo, showToast } from './ui.js';
+import { bindUIEvents, navigateTo, showToast } from './ui.js?v=2.0.2';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Limpa estado legado do menu lateral colapsável
