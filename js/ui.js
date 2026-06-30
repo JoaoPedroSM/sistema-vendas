@@ -2172,12 +2172,17 @@ function renderReceiptsTable() {
     
     // Ordena decrescente (mais recentes primeiro)
     const filtered = receipts.filter(r => {
+        const refStr = (r.ref || '').toLowerCase();
+        const clientStr = (r.client || '').toLowerCase();
+        const delivererStr = (r.deliverer || '').toLowerCase();
+        const itemsList = r.items || [];
+        
         // Query match
         const matchQ = !q || 
-            r.ref.toLowerCase().includes(q) || 
-            r.client.toLowerCase().includes(q) || 
-            r.deliverer.toLowerCase().includes(q) || 
-            r.items.some(i => i.desc.toLowerCase().includes(q) || i.serial.toLowerCase().includes(q));
+            refStr.includes(q) || 
+            clientStr.includes(q) || 
+            delivererStr.includes(q) || 
+            itemsList.some(i => (i.desc || '').toLowerCase().includes(q) || (i.serial || '').toLowerCase().includes(q));
             
         // Type match
         const matchType = type === 'all' || r.type === type;
@@ -2544,11 +2549,16 @@ function renderEntradasTable() {
     const end = document.getElementById('entrada-filter-date-end')?.value || '';
     
     const filtered = inputs.filter(ent => {
+        const refStr = (ent.ref || '').toLowerCase();
+        const sourceStr = (ent.source || '').toLowerCase();
+        const receiverStr = (ent.receiver || '').toLowerCase();
+        const itemsList = ent.items || [];
+        
         const matchQ = !q || 
-            ent.ref.toLowerCase().includes(q) || 
-            ent.source.toLowerCase().includes(q) || 
-            ent.receiver.toLowerCase().includes(q) || 
-            ent.items.some(i => i.desc.toLowerCase().includes(q) || i.serial.toLowerCase().includes(q));
+            refStr.includes(q) || 
+            sourceStr.includes(q) || 
+            receiverStr.includes(q) || 
+            itemsList.some(i => (i.desc || '').toLowerCase().includes(q) || (i.serial || '').toLowerCase().includes(q));
             
         const matchDate = (!start || ent.date >= start) && (!end || ent.date <= end);
         
