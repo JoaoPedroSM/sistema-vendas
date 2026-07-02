@@ -890,16 +890,16 @@ export function bindUIEvents() {
     const formNovoUsuario = document.getElementById('form-novo-usuario');
     
     document.getElementById('btn-novo-usuario')?.addEventListener('click', () => {
-        if (modalNovoUsuario) modalNovoUsuario.style.display = 'block';
+        if (modalNovoUsuario) modalNovoUsuario.classList.remove('hidden');
     });
     
     document.getElementById('btn-close-novo-usuario')?.addEventListener('click', () => {
-        if (modalNovoUsuario) modalNovoUsuario.style.display = 'none';
+        if (modalNovoUsuario) modalNovoUsuario.classList.add('hidden');
         if (formNovoUsuario) formNovoUsuario.reset();
     });
     
     document.getElementById('btn-cancelar-novo-usuario')?.addEventListener('click', () => {
-        if (modalNovoUsuario) modalNovoUsuario.style.display = 'none';
+        if (modalNovoUsuario) modalNovoUsuario.classList.add('hidden');
         if (formNovoUsuario) formNovoUsuario.reset();
     });
     
@@ -912,7 +912,7 @@ export function bindUIEvents() {
         try {
             createSubaccount(username, password, role);
             showToast('Sucesso', 'Usuário criado com sucesso!', 'success');
-            if (modalNovoUsuario) modalNovoUsuario.style.display = 'none';
+            if (modalNovoUsuario) modalNovoUsuario.classList.add('hidden');
             formNovoUsuario.reset();
             renderUsersTable();
         } catch (err) {
