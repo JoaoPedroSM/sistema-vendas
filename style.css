@@ -2205,6 +2205,10 @@ body[data-user-role="operator"] #btn-clear-db {
     display: none !important;
 }
 
-body[data-user-role="operator"] #menu-item-usuarios {
+body[data-user-role="operator"] #menu-item-usuarios,
+body[data-user-role="operator"] .nav-link[data-view="dashboard"],
+body[data-user-role="operator"] .nav-link[data-view="vendas"],
+body[data-user-role="operator"] .nav-link[data-view="vendedores"],
+body[data-user-role="operator"] .nav-link[data-view="relatorios"] {
     display: none !important;
 }

@@ -195,8 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Inicializa os manipuladores de eventos da interface
                             bindUIEvents();
 
-                            // Navega para o Dashboard por padrão
-                            navigateTo('dashboard');
+                            // Navega para o Dashboard por padrão (ou comprovantes para operadores)
+                            navigateTo(sessionUser.role === 'admin' ? 'dashboard' : 'comprovantes');
                             
                             showToast(
                                 'Acesso Automático',
@@ -276,8 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Inicializa os manipuladores de eventos da interface
                 bindUIEvents();
 
-                // Navega para o Dashboard por padrão
-                navigateTo('dashboard');
+                // Navega para o Dashboard por padrão (ou comprovantes para operadores)
+                navigateTo(sessionUser.role === 'admin' ? 'dashboard' : 'comprovantes');
             }
         } catch (error) {
             loginAttempts++;
