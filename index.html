@@ -1390,11 +1390,9 @@
             <div class="modal-body print-area" id="print-area" style="padding: 24px; overflow-y: auto; flex-grow: 1;">
                 <!-- Papel Timbrado NEWMED -->
                 <div class="receipt-paper" id="receipt-paper-target">
-                    <!-- EKG Heart Watermark -->
-                    <div class="receipt-watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); opacity: 0.035; pointer-events: none; z-index: 1;">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="300" height="240">
-                            <path d="M10,80 L50,80 L60,50 L75,110 L90,70 L100,90 L110,80 L120,80 C130,50 170,50 180,80 C190,110 150,150 100,155 C50,150 10,110 20,80 Z" fill="none" stroke="#ef4444" stroke-width="6"/>
-                        </svg>
+                    <!-- Text Watermark -->
+                    <div class="receipt-watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); opacity: 0.1; pointer-events: none; z-index: 1; font-size: 160px; font-weight: 900; color: #0066b2; font-family: 'Outfit', sans-serif; letter-spacing: -2px;">
+                        NEWMED
                     </div>
 
                     <!-- Conteúdo dinâmico do papel gerado via JS -->
