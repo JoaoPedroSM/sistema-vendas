@@ -257,7 +257,7 @@ body.light-theme #receipt-view-modal {
         opacity: 1 !important;
         visibility: visible !important;
         width: 100% !important;
-        height: auto !important;
+        height: 100% !important;
     }
 
     .modal-content.receipt-view-content {
@@ -265,6 +265,7 @@ body.light-theme #receipt-view-modal {
         background-color: transparent !important;
         box-shadow: none !important;
         width: 100% !important;
+        height: 100% !important;
         max-height: none !important;
         transform: none !important;
         position: static !important;
@@ -275,24 +276,26 @@ body.light-theme #receipt-view-modal {
     .modal-body.print-area {
         padding: 0 !important;
         overflow: visible !important;
+        height: 100% !important;
     }
 
     @page {
         size: A4 portrait;
-        margin: 0;
+        margin: 5mm;
     }
 
     .receipt-paper {
         box-shadow: none !important;
         border: none !important;
-        padding: 10mm 15mm !important;
+        padding: 5mm 10mm !important;
         width: 100% !important;
         max-width: 100% !important;
-        height: 297mm !important;
-        max-height: 297mm !important;
+        height: 100% !important;
+        min-height: 100% !important;
         box-sizing: border-box !important;
         display: flex !important;
         flex-direction: column !important;
+        justify-content: flex-start !important;
         overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
