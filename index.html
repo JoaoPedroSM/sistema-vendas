@@ -1443,35 +1443,50 @@
     <div class="modal-wrapper hidden" id="modal-novo-usuario">
         <div class="modal-card">
             <div class="modal-header">
+                <i data-lucide="user-plus" class="modal-icon-success" style="color: var(--primary); width: 28px; height: 28px;"></i>
                 <h3>Criar Novo Usuário</h3>
-                <button class="btn-close-modal" id="btn-close-novo-usuario"><i class="ti ti-x"></i></button>
             </div>
-            <div class="modal-body">
-                <form id="form-novo-usuario">
-                    <div class="form-group">
-                        <label class="form-label" for="new-username">Nome de Usuário</label>
-                        <input type="text" class="form-control" id="new-username" required minlength="3" placeholder="Ex: joao">
+            <form id="form-novo-usuario">
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+                    
+                    <div class="input-group">
+                        <label for="new-username">Nome de Usuário <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="new-username" required minlength="3" placeholder="Ex: joao">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="new-password">Senha (mín. 4 caracteres)</label>
-                        <input type="password" class="form-control" id="new-password" required minlength="4" placeholder="Senha para o funcionário">
+
+                    <div class="input-group">
+                        <label for="new-password">Senha <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key" class="input-icon"></i>
+                            <input type="password" id="new-password" required minlength="4" placeholder="Mínimo de 4 caracteres">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="new-role">Permissão (Cargo)</label>
-                        <select class="form-control" id="new-role" required>
-                            <option value="operator">Operador / Vendedor (Acesso Restrito)</option>
-                            <option value="admin">Administrador (Acesso Total)</option>
-                        </select>
-                        <small style="color: var(--text-secondary); margin-top: 4px; display: block;">
-                            * <strong>Operador:</strong> Não pode excluir dados, não vê faturamento geral, nem gerencia usuários.
+
+                    <div class="input-group">
+                        <label for="new-role">Permissão (Cargo) <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="shield" class="input-icon"></i>
+                            <select id="new-role" required style="width: 100%; background: transparent; border: none; outline: none; color: var(--text-primary); font-family: inherit; font-size: 0.95rem;">
+                                <option value="operator" style="background: var(--bg-surface); color: var(--text-primary);">Operador / Vendedor (Acesso Restrito)</option>
+                                <option value="admin" style="background: var(--bg-surface); color: var(--text-primary);">Administrador (Acesso Total)</option>
+                            </select>
+                        </div>
+                        <small style="color: var(--text-secondary); margin-top: 6px; font-size: 0.75rem; display: block; line-height: 1.4;">
+                            * <strong>Operador:</strong> Não pode excluir dados, não vê faturamento geral e não gerencia usuários.
                         </small>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="btn-cancelar-novo-usuario">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Criar Usuário</button>
-                    </div>
-                </form>
-            </div>
+
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px; border-top: 1px solid var(--border-color);">
+                    <button type="button" class="btn btn-secondary" id="btn-cancelar-novo-usuario">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="save" style="width: 18px; height: 18px;"></i> Criar Usuário
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
