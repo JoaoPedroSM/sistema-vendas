@@ -277,14 +277,29 @@ body.light-theme #receipt-view-modal {
         overflow: visible !important;
     }
 
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
     .receipt-paper {
         box-shadow: none !important;
         border: none !important;
         padding: 10mm 15mm !important;
         width: 100% !important;
         max-width: 100% !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    }
+    
+    .receipt-paper > div:last-child {
+        margin-top: auto !important;
     }
     
     .receipt-paper * {
