@@ -2657,7 +2657,7 @@ function handleFormSubmitEntradas(e) {
         return;
     }
     
-    const ref = document.getElementById('entrada-doc-ref').value.trim();
+    const ref = "";
     const source = document.getElementById('entrada-source').value.trim();
     const date = document.getElementById('entrada-date').value;
     const time = document.getElementById('entrada-time').value;
@@ -2708,7 +2708,7 @@ function renderEntradasTable() {
     if (filtered.length === 0) {
         listEl.innerHTML = `
             <tr class="empty-state-row">
-                <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <td colspan="6" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
                     Nenhuma entrada de material encontrada.
                 </td>
             </tr>
@@ -2718,7 +2718,6 @@ function renderEntradasTable() {
     
     listEl.innerHTML = filtered.map(ent => `
         <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
-            <td style="padding: 14px 20px; font-weight: 600; color: #fff;">${escapeHTML(ent.ref)}</td>
             <td style="padding: 14px 20px;">${escapeHTML(ent.source)}</td>
             <td style="padding: 14px 20px;">${escapeHTML(ent.receiver)}</td>
             <td style="padding: 14px 20px; color: var(--text-secondary);">${(ent.date || '').split('-').reverse().join('/')} às ${escapeHTML(ent.time || '')}</td>
