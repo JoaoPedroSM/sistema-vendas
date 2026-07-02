@@ -4,8 +4,6 @@
  * Requisitos: RF01, RNF04, RNF08
  */
 
-import { setSessionPassword, loadDatabase, clearSession } from './db.js';
-
 import { setSessionPassword, loadDatabase, saveDatabase, clearSession } from './db.js';
 
 const STORAGE_KEY_USERS = 'sales_monitor_users';
