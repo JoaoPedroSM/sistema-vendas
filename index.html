@@ -1163,7 +1163,6 @@
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
                                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
-                                    <th style="padding: 16px 20px;">Ref / NF</th>
                                     <th style="padding: 16px 20px;">Fornecedor / Origem</th>
                                     <th style="padding: 16px 20px;">Recebido por</th>
                                     <th style="padding: 16px 20px;">Data / Hora</th>
@@ -1174,7 +1173,7 @@
                             </thead>
                             <tbody id="entradas-list">
                                 <tr class="empty-state-row">
-                                    <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                                    <td colspan="6" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
                                         Nenhuma entrada de material encontrada.
                                     </td>
                                 </tr>
@@ -1195,11 +1194,7 @@
                             <!-- Detalhes da Entrada -->
                             <div class="card-style" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
                                 <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ti ti-file-import"></i> Dados da Nota/Ref</h3>
-                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
-                                    <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
-                                        <label for="entrada-doc-ref" style="font-size: 0.75rem; color: var(--text-secondary);">Ref / NF Entrada <span style="color: var(--danger);">*</span></label>
-                                        <input type="text" id="entrada-doc-ref" placeholder="Ex: NF-72615" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
-                                    </div>
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
                                     <div class="input-group" style="display: flex; flex-direction: column; gap: 4px;">
                                         <label for="entrada-source" style="font-size: 0.75rem; color: var(--text-secondary);">Fornecedor / Origem <span style="color: var(--danger);">*</span></label>
                                         <input type="text" id="entrada-source" placeholder="Ex: Distribuidora Med-Life" required style="width: 100%; padding: 10px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(0,0,0,0.15); color: #fff;">
