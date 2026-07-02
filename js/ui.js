@@ -17,6 +17,7 @@ import {
 } from './db.js';
 import { updateCharts, setChartPeriodoType } from './charts.js';
 import { getConsolidatedSellersMetrics, exportToExcel, exportToPDF } from './reports.js';
+import { listUsers, createSubaccount, deleteUser } from './auth.js';
 
 let activeSalesView = 'table';
 let calendarCurrentDate = new Date();
@@ -195,7 +196,8 @@ export function navigateTo(viewId) {
             'comprovantes': 'Comprovantes de Entrega e Devolução',
             'novo-comprovante': 'Novo Comprovante (Entrega/Devolução)',
             'entradas': 'Entradas de Material (Estoque)',
-            'nova-entrada': 'Registrar Entrada de Material'
+            'nova-entrada': 'Registrar Entrada de Material',
+            'usuarios': 'Gerenciamento de Usuários e Subcontas'
         };
         const titleEl = document.getElementById('page-title');
         if (titleEl) titleEl.textContent = titleMap[viewId] || 'VendasMonitor';
@@ -235,6 +237,8 @@ export function navigateTo(viewId) {
             if (typeof window.clearEntradaForm === 'function') {
                 window.clearEntradaForm();
             }
+        } else if (viewId === 'usuarios') {
+            renderUsersTable();
         }
         updateCloudBadge();
     }
@@ -805,6 +809,59 @@ function simulateCustomerNotification(sale) {
 }
 
 /**
+ * Renderiza a tabela de Usuários e Subcontas
+ */
+export function renderUsersTable() {
+    const tbody = document.querySelector('#table-usuarios tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    const users = listUsers();
+    
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary);">Sem permissão ou nenhum usuário encontrado.</td></tr>';
+        return;
+    }
+
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        
+        const roleLabel = u.role === 'admin' 
+            ? '<span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">Administrador</span>' 
+            : '<span class="badge" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">Operador</span>';
+            
+        tr.innerHTML = `
+            <td style="font-weight: 500;">${u.username}</td>
+            <td>${roleLabel}</td>
+            <td style="text-align: center;">
+                <button class="btn-icon btn-delete-user" data-id="${u.username}" title="Excluir Usuário" style="color: var(--danger);">
+                    <i data-lucide="trash-2"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // Eventos de exclusão
+    document.querySelectorAll('.btn-delete-user').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const username = e.currentTarget.getAttribute('data-id');
+            if (confirm(`Tem certeza que deseja excluir o usuário "${username}"?`)) {
+                try {
+                    deleteUser(username);
+                    renderUsersTable();
+                    showToast('Sucesso', 'Usuário excluído.', 'success');
+                } catch (err) {
+                    showToast('Erro', err.message, 'danger');
+                }
+            }
+        });
+    });
+}
+
+/**
  * Liga todos os eventos de clique, envio e alteração da UI (Event Binding)
  */
 export function bindUIEvents() {
@@ -826,6 +883,41 @@ export function bindUIEvents() {
     // Botão de Dashboard Vendas "Ver todas"
     document.getElementById('btn-dashboard-go-sales')?.addEventListener('click', () => {
         navigateTo('vendas');
+    });
+
+    // --- GERENCIAMENTO DE USUÁRIOS ---
+    const modalNovoUsuario = document.getElementById('modal-novo-usuario');
+    const formNovoUsuario = document.getElementById('form-novo-usuario');
+    
+    document.getElementById('btn-novo-usuario')?.addEventListener('click', () => {
+        if (modalNovoUsuario) modalNovoUsuario.style.display = 'block';
+    });
+    
+    document.getElementById('btn-close-novo-usuario')?.addEventListener('click', () => {
+        if (modalNovoUsuario) modalNovoUsuario.style.display = 'none';
+        if (formNovoUsuario) formNovoUsuario.reset();
+    });
+    
+    document.getElementById('btn-cancelar-novo-usuario')?.addEventListener('click', () => {
+        if (modalNovoUsuario) modalNovoUsuario.style.display = 'none';
+        if (formNovoUsuario) formNovoUsuario.reset();
+    });
+    
+    formNovoUsuario?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('new-username').value;
+        const password = document.getElementById('new-password').value;
+        const role = document.getElementById('new-role').value;
+        
+        try {
+            createSubaccount(username, password, role);
+            showToast('Sucesso', 'Usuário criado com sucesso!', 'success');
+            if (modalNovoUsuario) modalNovoUsuario.style.display = 'none';
+            formNovoUsuario.reset();
+            renderUsersTable();
+        } catch (err) {
+            showToast('Erro', err.message, 'danger');
+        }
     });
 
     // --- FORM DE VENDEDORES (CADASTRO / EDIÇÃO) ---

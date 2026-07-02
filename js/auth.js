@@ -6,36 +6,27 @@
 
 import { setSessionPassword, loadDatabase, clearSession } from './db.js';
 
+import { setSessionPassword, loadDatabase, saveDatabase, clearSession } from './db.js';
+
 const STORAGE_KEY_USERS = 'sales_monitor_users';
 
 // Sessão ativa do usuário logado (em memória)
 let currentUser = null;
+let activeMasterKey = null;
 
-/**
- * Retorna a lista de usuários cadastrados no sistema
- */
-function getUsersList() {
+export function getUsersList() {
     const data = localStorage.getItem(STORAGE_KEY_USERS);
     return data ? JSON.parse(data) : [];
 }
 
-/**
- * Salva a lista de usuários no localStorage
- */
 function saveUsersList(users) {
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
 }
 
-/**
- * Verifica se existem usuários registrados no sistema
- */
 export function hasRegisteredUsers() {
     return getUsersList().length > 0;
 }
 
-/**
- * Registra um novo usuário no sistema
- */
 export function registerUser(username, password) {
     const trimmedUsername = username.trim().toLowerCase();
     
@@ -49,84 +40,140 @@ export function registerUser(username, password) {
     }
 
     const users = getUsersList();
-    const userExists = users.some(u => u.username === trimmedUsername);
-
-    if (userExists) {
-        throw new Error('Este usuário já está cadastrado.');
+    if (users.length > 0) {
+        throw new Error('O sistema já possui um Administrador. Apenas ele pode cadastrar novas subcontas pelo painel interno.');
     }
 
-    // Se for o primeiro cadastro absoluto do sistema, limpa qualquer banco de dados criptografado anterior
-    // que possa ter sido criado com outra senha em testes antigos.
-    if (users.length === 0) {
-        localStorage.removeItem('sales_monitor_db_encrypted');
-        localStorage.removeItem('sales_monitor_db_backup');
-    }
+    // Se for o primeiro cadastro absoluto do sistema
+    localStorage.removeItem('sales_monitor_db_encrypted');
+    localStorage.removeItem('sales_monitor_db_backup');
 
-    // Geração de Salt para segurança contra ataques de dicionário
     const salt = CryptoJS.lib.WordArray.random(16).toString();
-    // Geração do Hash SHA-256 com o Salt
     const passwordHash = CryptoJS.SHA256(password + salt).toString();
+    
+    // Geração da Chave Mestra
+    const masterKey = CryptoJS.lib.WordArray.random(32).toString();
+    const encryptedMasterKey = CryptoJS.AES.encrypt(masterKey, password).toString();
 
     const newUser = {
         username: trimmedUsername,
         passwordHash,
-        salt
+        salt,
+        role: 'admin',
+        encryptedMasterKey
     };
 
     users.push(newUser);
     saveUsersList(users);
-
     return true;
 }
 
-/**
- * Realiza o login do usuário verificando as credenciais e derivando a chave de sessão do DB
- */
+export function createSubaccount(username, password, role) {
+    if (!currentUser || currentUser.role !== 'admin') {
+        throw new Error('Apenas administradores podem criar subcontas.');
+    }
+    
+    const trimmedUsername = username.trim().toLowerCase();
+    if (trimmedUsername.length < 3) throw new Error('O nome de usuário deve ter pelo menos 3 caracteres.');
+    if (password.length < 4) throw new Error('A senha deve ter pelo menos 4 caracteres.'); // Menos rigorosa para equipe
+    
+    const users = getUsersList();
+    if (users.some(u => u.username === trimmedUsername)) {
+        throw new Error('Este usuário já está cadastrado.');
+    }
+    
+    const salt = CryptoJS.lib.WordArray.random(16).toString();
+    const passwordHash = CryptoJS.SHA256(password + salt).toString();
+    
+    // Criptografa a Master Key em memória usando a senha da nova subconta
+    const encryptedMasterKey = CryptoJS.AES.encrypt(activeMasterKey, password).toString();
+
+    const newUser = {
+        username: trimmedUsername,
+        passwordHash,
+        salt,
+        role: role || 'operator',
+        encryptedMasterKey
+    };
+
+    users.push(newUser);
+    saveUsersList(users);
+    return true;
+}
+
+export function deleteUser(username) {
+    if (!currentUser || currentUser.role !== 'admin') throw new Error('Acesso negado.');
+    if (username === currentUser.username) throw new Error('Você não pode excluir sua própria conta.');
+    
+    let users = getUsersList();
+    users = users.filter(u => u.username !== username);
+    saveUsersList(users);
+}
+
+export function listUsers() {
+    if (!currentUser || currentUser.role !== 'admin') return [];
+    return getUsersList().map(u => ({
+        username: u.username,
+        role: u.role || 'admin'
+    }));
+}
+
 export function loginUser(username, password) {
     const trimmedUsername = username.trim().toLowerCase();
     const users = getUsersList();
     
     const user = users.find(u => u.username === trimmedUsername);
-    if (!user) {
-        throw new Error('Usuário não encontrado.');
-    }
+    if (!user) throw new Error('Usuário não encontrado.');
 
-    // Calcula o Hash com o Salt armazenado do usuário
     const calculatedHash = CryptoJS.SHA256(password + user.salt).toString();
+    if (calculatedHash !== user.passwordHash) throw new Error('Senha incorreta.');
 
-    if (calculatedHash !== user.passwordHash) {
-        throw new Error('Senha incorreta.');
+    let masterKey;
+    let isLegacyMigration = false;
+    
+    if (user.encryptedMasterKey) {
+        const bytes = CryptoJS.AES.decrypt(user.encryptedMasterKey, password);
+        masterKey = bytes.toString(CryptoJS.enc.Utf8);
+        if (!masterKey) throw new Error('Falha de integridade na chave de segurança da conta.');
+    } else {
+        // Usuário legado (antes da atualização de subcontas)
+        masterKey = password;
+        isLegacyMigration = true;
     }
 
-    // Define a senha inserida como chave de criptografia do DB em memória
-    // Isso garante que se a senha for incorreta, o banco não descriptografará.
-    setSessionPassword(password);
+    setSessionPassword(masterKey);
+    activeMasterKey = masterKey;
 
     try {
-        // Tenta carregar o banco de dados descriptografando-o
         loadDatabase();
         
-        // Define o usuário da sessão
-        currentUser = { username: user.username };
+        if (isLegacyMigration) {
+            // Migra o banco de dados e a conta para o novo sistema
+            const newMasterKey = CryptoJS.lib.WordArray.random(32).toString();
+            user.encryptedMasterKey = CryptoJS.AES.encrypt(newMasterKey, password).toString();
+            user.role = 'admin';
+            saveUsersList(users);
+            
+            setSessionPassword(newMasterKey);
+            activeMasterKey = newMasterKey;
+            saveDatabase();
+        }
+        
+        currentUser = { username: user.username, role: user.role || 'admin' };
         return currentUser;
     } catch (error) {
-        // Limpa a chave caso dê erro no load do DB
         clearSession();
+        activeMasterKey = null;
         throw error;
     }
 }
 
-/**
- * Realiza o logout limpando os estados da sessão em memória
- */
 export function logoutUser() {
     currentUser = null;
+    activeMasterKey = null;
     clearSession();
 }
 
-/**
- * Retorna o usuário logado atualmente
- */
 export function getCurrentUser() {
     return currentUser;
 }

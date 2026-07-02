@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const goToLoginLink = document.getElementById('go-to-login');
     const btnLogout = document.getElementById('btn-logout');
 
+    // Esconder opção de registro se já existir um admin (subcontas são criadas internamente)
+    if (hasRegisteredUsers() && goToRegisterLink) {
+        goToRegisterLink.parentElement.style.display = 'none';
+    }
+
     // Alternar entre login e registro
     goToRegisterLink?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -167,6 +172,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             const initials = sessionUser.username.substring(0, 2).toUpperCase();
                             const elAvatar = document.getElementById('user-avatar-initials');
                             if (elAvatar) elAvatar.textContent = initials;
+                            
+                            const elRole = document.querySelector('.user-role');
+                            if (elRole) {
+                                elRole.textContent = sessionUser.role === 'admin' ? 'Nível Acesso: Total' : 'Nível Acesso: Operador';
+                            }
+                            
+                            // Restringir UI baseado no cargo
+                            document.body.setAttribute('data-user-role', sessionUser.role);
+                            const menuUsuarios = document.getElementById('menu-item-usuarios');
+                            if (menuUsuarios) {
+                                menuUsuarios.style.display = sessionUser.role === 'admin' ? 'block' : 'none';
+                            }
 
                             // Salva último usuário logado descriptografado de apoio
                             localStorage.setItem('last_logged_user', sessionUser.username);
@@ -236,6 +253,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const initials = sessionUser.username.substring(0, 2).toUpperCase();
                 const elAvatar = document.getElementById('user-avatar-initials');
                 if (elAvatar) elAvatar.textContent = initials;
+                
+                const elRole = document.querySelector('.user-role');
+                if (elRole) {
+                    elRole.textContent = sessionUser.role === 'admin' ? 'Nível Acesso: Total' : 'Nível Acesso: Operador';
+                }
+                
+                // Restringir UI baseado no cargo
+                document.body.setAttribute('data-user-role', sessionUser.role);
+                const menuUsuarios = document.getElementById('menu-item-usuarios');
+                if (menuUsuarios) {
+                    menuUsuarios.style.display = sessionUser.role === 'admin' ? 'block' : 'none';
+                }
 
                 // Salva último usuário logado descriptografado de apoio
                 localStorage.setItem('last_logged_user', sessionUser.username);
